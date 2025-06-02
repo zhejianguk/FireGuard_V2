@@ -791,6 +791,26 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   //===== GuardianCouncil Function: Start ====//
   /* R Features */
   val rf_wen_rsu = Wire(0.U(1.W))
+  rf_wen_rsu := 0.U
+  csr.io.pfarf_valid := 0.U
+  csr.io.fcsr_in := 0.U
+  checker_mode := 0.U
+  lsl_resp_valid := 0.U
+  lsl_resp_tag := 0.U
+  lsl_resp_size := 0.U
+  lsl_resp_addr := 0.U
+  lsl_resp_data := 0.U
+  lsl_resp_has_data := 0.U
+  lsl_resp_replay := 0.U
+  io.lsl_near_full := 0.U
+  lsl_resp_data_csr := 0.U
+  lsl_req_ready_csr := 0.U
+  io.elu_data := 0.U
+  io.elu_status := 0.U
+  
+  when (rf_wen) {
+    rf.write(rf_waddr, rf_wdata)
+  }
   val returned_to_special_address_valid = Wire(Bool())
   //===== GuardianCouncil Function: End   ====//
 
