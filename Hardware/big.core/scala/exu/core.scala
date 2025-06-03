@@ -100,6 +100,8 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     val ic_crnt_target = Output(UInt(5.W))
     val if_correct_process = Input(UInt(1.W))
     val ic_counter = Output(Vec(GH_GlobalParams.GH_NUM_CORES, (UInt(16.W))))
+    val i_counter = Output(UInt(64.W))
+    val reset_counters = Input(UInt(1.W))
     val clear_ic_status_tomain = Input(UInt(GH_GlobalParams.GH_NUM_CORES.W))
     val icsl_na = Input(UInt(GH_GlobalParams.GH_NUM_CORES.W))
     //===== GuardianCouncil Function: End ====//
@@ -1612,7 +1614,16 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   for (i <-0 until GH_GlobalParams.GH_NUM_CORES){
     io.ic_counter(i)                              := 0.U
   }
-  
+
+  /* Performance Counters */
+  val i_counter_reg                                = RegInit(0.U(64.W))
+  when (io.reset_counters === 1.U) {
+    i_counter_reg                                 := 0.U
+  } .otherwise {
+    val num_committed = PopCount(rob.io.commit.arch_valids)
+    i_counter_reg := i_counter_reg + num_committed
+  }
+  io.i_counter                                    := i_counter_reg
 
   // revisit 
   csr.io.pfarf_valid                              := 0.U

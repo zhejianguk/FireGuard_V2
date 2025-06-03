@@ -256,16 +256,12 @@ class GHT (val params: GHTParams) extends Module with HasGHT_IO
   io.ght_filters_empty                          := u_ght_filters.io.ght_filters_empty & (core_d_all === 0.U) & (ght_pack === 0.U)
 
   val debug_mcounter                             = RegInit(0.U(64.W))
-  val debug_icounter                             = RegInit(0.U(64.W))
   when (core_d_all =/= 0.U) {
     debug_mcounter                              := debug_mcounter + 1.U
   }
-  when (inst_index =/= 0.U) {
-    debug_icounter                              := debug_icounter + 1.U
-  }
-  
-  io.debug_mcounter                             := debug_mcounter
-  io.debug_icounter                             := debug_icounter
+
+  io.debug_mcounter                             := debug_mcounter // Merged instructions
+  io.debug_icounter                             := 0.U
 
 
   val debug_bp_checker                           = RegInit(0.U(64.W))
