@@ -16,9 +16,13 @@ class GHE(opcodes: OpcodeSet)(implicit p: Parameters) extends LazyRoCC(opcodes) 
 class GHEImp(outer: GHE)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
     with HasCoreParameters {
     val s_or_r                  = RegInit(0.U(2.W))    // If the core runs for security or relaibility? 
-                                                       // 0: secuirty; 1: reliability
+                                                       // 0: secuirty; 1: reliability;
 
+                                                       // If it is the big core:
+                                                       // 0b01: Frontend Analysis;
+                                                       // 0b10: Fault Injection;
     val gh_packet_width         = GH_GlobalParams.GH_WIDITH_PACKETS
+    
     val cmd                     = io.cmd
     val funct                   = cmd.bits.inst.funct
     val rs2                     = cmd.bits.inst.rs2

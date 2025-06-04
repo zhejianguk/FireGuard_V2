@@ -83,9 +83,6 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     val alu_out = Output(Vec(coreWidth, UInt(xLen.W)))
     val ght_prv = Output(UInt(2.W))
     val is_rvc = Output(Vec(coreWidth, UInt(1.W)))
-    // val arf_long = Output(UInt((xLen*2).W))
-    // val arf_pc = Output(UInt(40.W))
-    // val arf_sel = Input(UInt(6.W))
 
     val gh_stall = Input(Bool())
     
@@ -101,6 +98,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     val if_correct_process = Input(UInt(1.W))
     val ic_counter = Output(Vec(GH_GlobalParams.GH_NUM_CORES, (UInt(16.W))))
     val i_counter = Output(UInt(64.W))
+    val g_counter = Output(UInt(64.W)) // Global cycle counter
     val reset_counters = Input(UInt(1.W))
     val clear_ic_status_tomain = Input(UInt(GH_GlobalParams.GH_NUM_CORES.W))
     val icsl_na = Input(UInt(GH_GlobalParams.GH_NUM_CORES.W))
@@ -1621,9 +1619,17 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     i_counter_reg                                 := 0.U
   } .otherwise {
     val num_committed = PopCount(rob.io.commit.arch_valids)
-    i_counter_reg := i_counter_reg + num_committed
+    i_counter_reg                                 := Mux(io.if_correct_process.asBool, i_counter_reg + num_committed, i_counter_reg)
   }
   io.i_counter                                    := i_counter_reg
+
+  val g_counter_reg                                = RegInit(0.U(64.W))
+  when (io.reset_counters === 1.U) {
+    g_counter_reg                                 := 0.U
+  } .otherwise {
+    g_counter_reg                                 := Mux(io.if_correct_process.asBool, g_counter_reg + 1.U, g_counter_reg)
+  }
+  io.g_counter                                    := g_counter_reg
 
   // revisit 
   csr.io.pfarf_valid                              := 0.U

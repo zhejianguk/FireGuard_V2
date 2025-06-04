@@ -2,6 +2,7 @@ package freechips.rocketchip.guardiancouncil
 
 
 import chisel3._
+import chisel3.util._
 import chisel3.experimental.{BaseModule}
 
 //==========================================================
@@ -64,6 +65,7 @@ class GHT_IO (params: GHTParams) extends Bundle {
   val gtimer                                    = Input(UInt(62.W))
   val gtimer_reset                              = Input(UInt(1.W))
   val use_fi_mode                               = Input(UInt(1.W))
+  val use_frontend_analysis_mode                = Input(UInt(1.W))
 }
 
 trait HasGHT_IO extends BaseModule {
@@ -132,10 +134,10 @@ class GHT (val params: GHTParams) extends Module with HasGHT_IO
   
   for (i <- 0 to params.core_width -1){
     if (params.use_prfs){ 
-      io.ght_prfs_forward_ldq(i)                := u_ght_filters.io.ght_prfs_forward_ldq(i)
-      io.ght_prfs_forward_stq(i)                := u_ght_filters.io.ght_prfs_forward_stq(i)
-      io.ght_prfs_forward_ftq(i)                := u_ght_filters.io.ght_prfs_forward_ftq(i)
-      io.ght_prfs_forward_prf(i)                := u_ght_filters.io.ght_prfs_forward_prf(i)
+      io.ght_prfs_forward_ldq(i)                := Mux(io.use_frontend_analysis_mode === 1.U, 0.U, u_ght_filters.io.ght_prfs_forward_ldq(i))
+      io.ght_prfs_forward_stq(i)                := Mux(io.use_frontend_analysis_mode === 1.U, 0.U, u_ght_filters.io.ght_prfs_forward_stq(i))
+      io.ght_prfs_forward_ftq(i)                := Mux(io.use_frontend_analysis_mode === 1.U, 0.U, u_ght_filters.io.ght_prfs_forward_ftq(i))
+      io.ght_prfs_forward_prf(i)                := Mux(io.use_frontend_analysis_mode === 1.U, 0.U, u_ght_filters.io.ght_prfs_forward_prf(i))
     } else {
       io.ght_prfs_forward_ldq(i)                := false.B
       io.ght_prfs_forward_stq(i)                := false.B
@@ -143,6 +145,21 @@ class GHT (val params: GHTParams) extends Module with HasGHT_IO
       io.ght_prfs_forward_prf(i)                := false.B
     }
   }
+
+  val debug_mcounter                             = RegInit(0.U(64.W))
+  val count_ldq                                  = Cat(0.U(2.W), PopCount(VecInit((0 until params.core_width).map { i => 
+    u_ght_filters.io.ght_prfs_forward_ldq(i).asBool
+  })))
+  val count_stq                                  = Cat(0.U(2.W), PopCount(VecInit((0 until params.core_width).map { i =>
+    u_ght_filters.io.ght_prfs_forward_stq(i).asBool
+  })))
+  val count_ftq                                  = Cat(0.U(2.W), PopCount(VecInit((0 until params.core_width).map { i =>
+    u_ght_filters.io.ght_prfs_forward_ftq(i).asBool
+  })))
+  val count_all                                  = count_ldq + count_stq + count_ftq // foward_ftq and forward_prf are redundant
+  debug_mcounter                                := Mux(io.gtimer_reset.asBool, 0.U, debug_mcounter + count_all)
+  io.debug_mcounter                             := debug_mcounter // Merged instructions
+
 
   // Simulating 1/2-width event filter
   val ght_cfg_in_ft_filter_width                 = WireInit(0.U(32.W))
@@ -255,12 +272,7 @@ class GHT (val params: GHTParams) extends Module with HasGHT_IO
   io.ghm_agg_core_id                            := agg_core_id
   io.ght_filters_empty                          := u_ght_filters.io.ght_filters_empty & (core_d_all === 0.U) & (ght_pack === 0.U)
 
-  val debug_mcounter                             = RegInit(0.U(64.W))
-  when (core_d_all =/= 0.U) {
-    debug_mcounter                              := debug_mcounter + 1.U
-  }
 
-  io.debug_mcounter                             := debug_mcounter // Merged instructions
   io.debug_icounter                             := 0.U
 
 

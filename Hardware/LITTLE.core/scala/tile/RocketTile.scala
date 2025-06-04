@@ -150,25 +150,6 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
   val elu_deq_bridge = Module(new GH_Bridge(GH_BridgeParams(1)))
   val elu_sel_bridge = Module(new GH_Bridge(GH_BridgeParams(1)))
 
-  /* R Features */
-  // A mini-decoder for packets
-  /*
-  val s_or_r = Reg(0.U(1.W))
-  val packet_in = outer.ghe_packet_in_SKNode.bundle
-  val packet_index = packet_in (143, 136)
-  val ptype_fg = Mux(((packet_index(2) === 0.U) && (packet_index(1,0) =/= 0.U) && (s_or_r === 0.U)), 1.U, 0.U)
-  val ptype_lsl = Mux(((packet_index(2) === 0.U) && (packet_index(1,0) =/= 0.U) && (s_or_r === 1.U)), 1.U, 0.U)
-  val ptype_rcu = Mux((packet_index(2) === 1.U) && (s_or_r === 1.U), 1.U, 0.U)
-  val arfs_if_CPS = Mux(ptype_rcu.asBool && (packet_index (6, 3) === outer.rocketParams.hartId.U), 1.U, 0.U)
-
-
-  val packet_fg = Mux((ptype_fg === 1.U), packet_in, 0.U)
-  val packet_rcu = Mux((ptype_rcu === 1.U), packet_in, 0.U)
-  val packet_lsl = Mux((ptype_lsl === 1.U), packet_in, 0.U)
-
-
-  val arf_copy_bridge = Module(new GH_Bridge(GH_BridgeParams(1)))
-  */
   
   val s_or_r = Reg(0.U(1.W))
   val packet_in = outer.ghe_packet_in_SKNode.bundle

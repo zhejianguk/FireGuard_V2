@@ -104,9 +104,9 @@ int main(void)
   ght_unset_satp_priv();
   ght_set_status (0x00);
 
-  m_counter = debug_mcounter();
-  i_counter = debug_icounter();
-  g_counter = debug_gcounter();
+  m_counter = debug_mcounter(); // Merged instructions
+  i_counter = debug_icounter(); // Instructions committed
+  g_counter = debug_gcounter(); // Global cycle counter
 
   lock_acquire(&uart_lock);
   printf("Debug, m-counter: %x \r\n", m_counter);

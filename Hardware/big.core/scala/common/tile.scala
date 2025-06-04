@@ -182,6 +182,7 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
   val icctrl_bridge = Module(new GH_Bridge(GH_BridgeParams(4)))
   val t_value_bridge = Module(new GH_Bridge(GH_BridgeParams(15)))
   val s_or_r = Reg(UInt(1.W))
+  val frontend_analysis = Reg(UInt(1.W))
   val fi_sel = Wire(UInt(8.W))
   val fi_latency = Wire(UInt(57.W))
 
@@ -215,6 +216,7 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
     ght.io.gtimer                                := debug_gtimer
     ght.io.gtimer_reset                          := debug_gtimer_reset
     ght.io.use_fi_mode                           := s_or_r
+    ght.io.use_frontend_analysis_mode            := frontend_analysis
     ght.io.ght_cfg_in                            := ght_cfg_bridge.io.out
     ght.io.ght_cfg_valid                         := ght_cfg_v_bridge.io.out
     ght.io.debug_bp_reset                        := debug_bp_reset_bridge.io.out
@@ -343,6 +345,7 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
     ic_counter_superset                          := core.io.ic_counter.reverse.reduce(Cat(_,_))
     outer.ic_counter_SRNode.bundle               := ic_counter_superset
     core.io.num_of_checker                       := number_checkers_bridge.io.out
+    core.io.reset_counters                       := debug_gtimer_reset
   } else { 
     // Not be used, added to pass the compile
     core.io.gh_stall                             := 0.U
@@ -485,18 +488,19 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
     if_correct_process_bridge.io.in              := cmdRouter.io.if_correct_process_out
 
     cmdRouter.io.debug_mcounter                  := debug_mcounter_bridge.io.out
-    cmdRouter.io.debug_icounter                  := debug_icounter_bridge.io.out
+    cmdRouter.io.debug_icounter                  := core.io.i_counter
     cmdRouter.io.debug_bp_checker                := debug_bp_checker_bridge.io.out
     cmdRouter.io.fi_latency                      := fi_latency
     cmdRouter.io.debug_bp_cdc                    := debug_bp_cdc_bridge.io.out
     cmdRouter.io.debug_bp_filter                 := debug_bp_filter_bridge.io.out
-    cmdRouter.io.debug_gcounter                  := outer.debug_gcounter_SKNode.bundle
+    cmdRouter.io.debug_gcounter                  := core.io.g_counter
 
     /* R Features */
     icctrl_bridge.io.in                          := cmdRouter.io.icctrl_out
     t_value_bridge.io.in                         := cmdRouter.io.t_value_out
     cmdRouter.io.rsu_status_in                   := 0.U
     s_or_r                                       := cmdRouter.io.s_or_r_out(1)
+    frontend_analysis                            := cmdRouter.io.s_or_r_out(0)
     fi_sel                                       := cmdRouter.io.fi_sel_out
     //===== GuardianCouncil Function: End   ====//
   }

@@ -55,7 +55,7 @@ static inline uint64_t debug_gcounter ()
 {
   uint64_t gcounter;
   ROCC_INSTRUCTION_D (1, gcounter, 0x23);
-  return icounter;
+  return gcounter;
 }
 
 /*
