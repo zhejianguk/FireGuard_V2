@@ -48,6 +48,7 @@ class GHT_FTABLE (val params: GHT_FTABLE_Params) extends Module with HasGHT_FTAB
   mem_ren                                      := io.inst_newcommit
   mem_ren_reg                                  := mem_ren
 
+
   // Size: 2^(is_rvc + width_func + width_opcode)
   // Width: width_index + width_sel_d
   val ref_table                                 = SyncReadMem(2048, UInt((2 + 2).W))
@@ -62,4 +63,21 @@ class GHT_FTABLE (val params: GHT_FTABLE_Params) extends Module with HasGHT_FTAB
   val zeros_3bits                               = WireInit(0.U(3.W))
   io.inst_index                                := Mux(mem_ren_reg === 1.U, Cat(zeros_3bits, mem_data(3,2)), 0.U)
   io.inst_sel_d                                := Mux(mem_ren_reg === 1.U, mem_data(1,0), 0.U)
+
+  // Initialisation circuit
+  val if_initalised                             = RegInit(false.B)
+  val boot_count                                = RegInit(0.U(11.W))
+  val do_initialisation                         = RegInit(false.B)
+  val initial_count                             = RegInit(0.U(11.W))
+
+  boot_count                                   := Mux(!do_initialisation && !if_initalised, boot_count + 1.U, boot_count)
+  do_initialisation                            := Mux(boot_count > 256.U && !if_initalised, true.B, 
+                                                      Mux(if_initalised, false.B, do_initialisation))
+  if_initalised                                := Mux(initial_count === 2047.U, true.B, if_initalised)
+
+  when (do_initialisation){
+    initial_count                              := initial_count + 1.U
+    ref_table.write(initial_count, 0.U)
+  }
+
 }

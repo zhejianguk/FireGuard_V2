@@ -9,8 +9,6 @@ char* shadow;
 int uart_lock = 0;
 int *uart_lock_p = &uart_lock;
 
-void lock_acquire(int *lock);
-void lock_release (int *lock);
 
 
 /* Core_0 thread */

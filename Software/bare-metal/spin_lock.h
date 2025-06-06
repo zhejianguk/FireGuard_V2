@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 
-void lock_acquire(int *lock)
+static inline void lock_acquire(int *lock)
 {
 	int temp0 = 1;
 
@@ -15,7 +15,7 @@ void lock_acquire(int *lock)
 	);
 }
 
-void lock_release (int *lock)
+static inline void lock_release (int *lock)
 {
 	__asm__(
 		"amoswap.w.rl x0, x0, (%0);"// Release lock by storing 0.

@@ -24,7 +24,7 @@ class GHMIO(params: GHMParams) extends Bundle {
   val ghm_status_in                              = Input(UInt(32.W))
   val ghm_packet_outs                            = Output(Vec(params.number_of_little_cores, UInt(params.width_GH_packet.W)))
   val ghm_status_outs                            = Output(Vec(params.number_of_little_cores, UInt(32.W)))
-  val ghe_event_in                               = Input(Vec(params.number_of_little_cores, UInt(5.W)))
+  val ghe_event_in                               = Input(Vec(params.number_of_little_cores, UInt(6.W)))
   val clear_ic_status                            = Input(Vec(params.number_of_little_cores, UInt(1.W)))
   val clear_ic_status_tomain                     = Output(UInt(GH_GlobalParams.GH_NUM_CORES.W))
   val bigcore_hang                               = Output(UInt(1.W))
@@ -59,7 +59,7 @@ class GHM (val params: GHMParams)(implicit p: Parameters) extends LazyModule
     val cdc_busy                                   = WireInit(VecInit(Seq.fill(params.number_of_little_cores)(0.U(1.W))))
     val cdc_empty                                  = WireInit(VecInit(Seq.fill(params.number_of_little_cores)(0.U(1.W))))
 
-    val u_cdc                                      = Seq.fill(params.number_of_little_cores) {Module(new GH_CDCH2LFIFO_HandShake(GH_CDCH2L_Params (0, params.width_GH_packet, 5)))}
+    val u_cdc                                      = Seq.fill(params.number_of_little_cores) {Module(new GH_CDCH2LFIFO_HandShake(GH_CDCH2L_Params (0, params.width_GH_packet, 16)))}
 
     packet_dest                                   := io.ghm_packet_dest
 
@@ -67,9 +67,10 @@ class GHM (val params: GHMParams)(implicit p: Parameters) extends LazyModule
     for (i <- 0 to params.number_of_little_cores - 1) {      
       u_cdc(i).io.cdc_data_in                     := io.ghm_packet_in
       u_cdc(i).io.cdc_push                        := packet_dest(i)
-      packet_out_wires(i)                         := u_cdc(i).io.cdc_data_out
+      packet_out_wires(i)                         := Cat(u_cdc(i).io.cdc_flag, u_cdc(i).io.cdc_data_out(142, 0))
       u_cdc(i).io.cdc_pull                        := io.ghe_event_in(i)(4)
       u_cdc(i).io.cdc_slave_busy                  := io.ghe_event_in(i)(0)
+      u_cdc(i).io.cdc_ack                         := io.ghe_event_in(i)(5)
       cdc_busy(i)                                 := u_cdc(i).io.cdc_busy
       cdc_empty(i)                                := u_cdc(i).io.cdc_empty
     }
@@ -242,7 +243,7 @@ object GHMCore {
           icsl_naSRNodes(i).bundle                := 0.U
           icsl_out_SRNodes(i).bundle              := ghm.module.io.icsl_counter(i-1)
           ghm.module.io.ghe_event_in(i-1)         := ghm_ghe_event_in_SKNodes(i).bundle
-          ghm.module.io.ghe_revent_in(i-1)        := ghm_ghe_event_in_SKNodes(i).bundle
+          ghm.module.io.ghe_revent_in(i-1)        := ghm_ghe_revent_in_SKNodes(i).bundle
           ghm.module.io.clear_ic_status(i-1)      := clear_ic_status_SkNodes(i).bundle
         }
       }

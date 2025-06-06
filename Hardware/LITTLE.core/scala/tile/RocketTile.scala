@@ -140,17 +140,23 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
   
   val s_or_r = Reg(0.U(1.W))
   val packet_in = outer.ghe_packet_in_SKNode.bundle
-  val packet_index = packet_in (143, 136)
-  val ptype_fg = Mux(((packet_index(2) === 0.U) && (packet_index(1,0) =/= 0.U) && (s_or_r === 0.U)), 1.U, 0.U)
+  val packet_index = packet_in (142, 136)
+  val ptype_fg = Mux(((packet_index(2) === 0.U) && (packet_index(1,0) =/= 0.U)), 1.U, 0.U)
+  val packet_fg = Mux((ptype_fg === 1.U), packet_in(135,0), 0.U)
+
+
   val ptype_lsl = 0.U
   val ptype_rcu = 0.U
   val arfs_if_CPS = 0.U
+  val cdc_flag = RegInit(0.U(1.W))
+  val cdc_ack =RegInit(1.U(1.W))
 
 
-  val packet_fg = Mux((ptype_fg === 1.U), packet_in, 0.U)
+  cdc_flag := Mux(packet_in(143) =/= cdc_flag, packet_in(143), cdc_flag)
+  cdc_ack := Mux(packet_in(143) =/= cdc_flag, cdc_ack + 1.U, cdc_ack)
+  
   val packet_rcu = 0.U
   val packet_lsl = 0.U
-
   val arf_copy_bridge = Module(new GH_Bridge(GH_BridgeParams(1)))
 
   //===== GuardianCouncil Function: Start ====//
@@ -185,7 +191,8 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
     val zeros_4bits = Wire(UInt(width=4))
     zeros_4bits := 0.U
 
-    outer.ghe_event_out_SRNode.bundle := (ghe_bridge.io.out | Cat(core.io.packet_cdc_ready, zeros_4bits) | Cat(zeros_4bits, core.io.lsl_near_full))
+    outer.ghe_event_out_SRNode.bundle := Cat(cdc_ack, (ghe_bridge.io.out | Cat(core.io.packet_cdc_ready, zeros_4bits) | Cat(zeros_4bits, core.io.lsl_near_full)))
+
     outer.ghe_revent_out_SRNode.bundle := core.io.lsl_near_full
     core.io.arfs_if_CPS := arfs_if_CPS
     core.io.packet_arfs := packet_rcu

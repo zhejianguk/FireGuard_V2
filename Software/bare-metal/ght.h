@@ -11,26 +11,26 @@
 #define GHT_FULL 0x02
 #define GHT_EMPTY 0x01
 
-uint64_t debug_bp_reset ()
+static inline uint64_t debug_bp_reset ()
 {
   ROCC_INSTRUCTION (1, 0x2d);
 }
 
-uint64_t debug_bp_checker ()
+static inline uint64_t debug_bp_checker ()
 {
   uint64_t bp_checker;
   ROCC_INSTRUCTION_D (1, bp_checker, 0x1d);
   return bp_checker;
 }
 
-uint64_t debug_bp_cdc ()
+static inline uint64_t debug_bp_cdc ()
 {
   uint64_t bp_cdc;
   ROCC_INSTRUCTION_D (1, bp_cdc, 0x1e);
   return bp_cdc;
 }
 
-uint64_t debug_bp_filter ()
+static inline uint64_t debug_bp_filter ()
 {
   uint64_t bp_filter;
   ROCC_INSTRUCTION_D (1, bp_filter, 0x1e);
@@ -181,7 +181,7 @@ static inline void ght_debug_filter_width (uint64_t width)
 
 
 
-void idle()
+static inline void idle()
 {
   while(1){};
 }

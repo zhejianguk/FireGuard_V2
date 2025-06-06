@@ -272,7 +272,7 @@ abstract class BaseTile private (val crossing: ClockCrossingType, q: Parameters)
   println("#### Jessica #### Generating GHT **Nodes** on the tile, HartID:", tileParams.hartId, "...!!")
   val ghe_packet_in_SKNode        = BundleBridgeSink[UInt](Some(() => UInt(GH_GlobalParams.GH_WIDITH_PACKETS.W)))
   val ghe_status_in_SKNode        = BundleBridgeSink[UInt](Some(() => UInt(32.W)))
-  val ghe_event_out_SRNode        = BundleBridgeSource[UInt](Some(() => UInt(5.W)))
+  val ghe_event_out_SRNode        = BundleBridgeSource[UInt](Some(() => UInt(6.W)))
   val ghe_revent_out_SRNode       = BundleBridgeSource[UInt](Some(() => UInt(1.W)))
 
   println("#### Jessica #### Generating GHE **Nodes** on the tile, HartID:", tileParams.hartId, "...!!")
