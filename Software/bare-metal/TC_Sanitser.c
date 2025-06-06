@@ -128,9 +128,9 @@ int main(void)
   bp_cdc = debug_bp_cdc();
   bp_filter = debug_bp_filter();
 
-  printf("bp_debug_checker: %lx", bp_checker);
-  printf("debug_bp_cdc: %lx", bp_cdc);
-  printf("debug_bp_filter: %lx", bp_filter);
+  printf("bp_debug_checker: %lx \r\n", bp_checker);
+  printf("debug_bp_cdc: %lx \r\n", bp_cdc);
+  printf("debug_bp_filter: %lx \r\n", bp_filter);
 
   debug_bp_reset();
 
