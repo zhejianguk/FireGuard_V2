@@ -91,19 +91,19 @@ class AsyncResetSynchronizerShiftReg(w: Int = 1, sync: Int, init: Int)
 }
 
 object AsyncResetSynchronizerShiftReg {
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: Int, name: Option[String] = None): T =
+  def apply [T <: Data](in: T, sync: Int, init: Int, name: Option[String] = None): T =
     AbstractPipelineReg(new AsyncResetSynchronizerShiftReg(in.getWidth, sync, init), in, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, name: Option[String]): T =
+  def apply [T <: Data](in: T, sync: Int, name: Option[String]): T =
     apply (in, sync, 0, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int): T =
+  def apply [T <: Data](in: T, sync: Int): T =
     apply (in, sync, 0, None)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: T, name: Option[String]): T =
+  def apply [T <: Data](in: T, sync: Int, init: T, name: Option[String]): T =
     apply(in, sync, init.litValue.toInt, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: T): T =
+  def apply [T <: Data](in: T, sync: Int, init: T): T =
     apply (in, sync, init.litValue.toInt, None)
 }
 
@@ -123,19 +123,19 @@ class SyncResetSynchronizerShiftReg(w: Int = 1, sync: Int, init: Int) extends Ab
 }
 
 object SyncResetSynchronizerShiftReg {
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: Int, name: Option[String] = None): T =
+  def apply [T <: Data](in: T, sync: Int, init: Int, name: Option[String] = None): T =
     if (sync == 0) in else AbstractPipelineReg(new SyncResetSynchronizerShiftReg(in.getWidth, sync, init), in, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, name: Option[String]): T =
+  def apply [T <: Data](in: T, sync: Int, name: Option[String]): T =
     apply (in, sync, 0, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int): T =
+  def apply [T <: Data](in: T, sync: Int): T =
     apply (in, sync, 0, None)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: T, name: Option[String]): T =
+  def apply [T <: Data](in: T, sync: Int, init: T, name: Option[String]): T =
     apply(in, sync, init.litValue.toInt, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: T): T =
+  def apply [T <: Data](in: T, sync: Int, init: T): T =
     apply (in, sync, init.litValue.toInt, None)
 }
 
@@ -150,19 +150,19 @@ class ResetSynchronizerShiftReg(w: Int = 1, sync: Int, init: Int) extends Abstra
 }
 
 object ResetSynchronizerShiftReg {
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: Int, name: Option[String] = None): T =
+  def apply [T <: Data](in: T, sync: Int, init: Int, name: Option[String] = None): T =
     AbstractPipelineReg(new ResetSynchronizerShiftReg(in.getWidth, sync, init), in, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, name: Option[String]): T =
+  def apply [T <: Data](in: T, sync: Int, name: Option[String]): T =
       apply (in, sync, 0, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int): T =
+  def apply [T <: Data](in: T, sync: Int): T =
       apply (in, sync, 0, None)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: T, name: Option[String]): T =
+  def apply [T <: Data](in: T, sync: Int, init: T, name: Option[String]): T =
     apply(in, sync, init.litValue.toInt, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int, init: T): T =
+  def apply [T <: Data](in: T, sync: Int, init: T): T =
     apply (in, sync, init.litValue.toInt, None)
 }
 
@@ -176,13 +176,13 @@ class SynchronizerShiftReg(w: Int = 1, sync: Int = 3) extends AbstractPipelineRe
 }
 
 object SynchronizerShiftReg {
-  def apply [T <: Chisel.Data](in: T, sync: Int, name: Option[String] = None): T =
+  def apply [T <: Data](in: T, sync: Int, name: Option[String] = None): T =
     if (sync == 0) in else AbstractPipelineReg(new SynchronizerShiftReg(in.getWidth, sync), in, name)
 
-  def apply [T <: Chisel.Data](in: T, sync: Int): T =
+  def apply [T <: Data](in: T, sync: Int): T =
     apply (in, sync, None)
 
-  def apply [T <: Chisel.Data](in: T): T =
+  def apply [T <: Data](in: T): T =
     apply (in, 3, None)
 
 
@@ -198,12 +198,12 @@ class ClockCrossingReg(w: Int = 1, doInit: Boolean) extends Module {
     val en = Input(Bool())
   })
 
-  val cdc_reg = if (doInit) RegEnable(next=io.d, init=0.U(w.W), enable=io.en) else RegEnable(next=io.d, enable=io.en)
+  val cdc_reg = if (doInit) RegEnable(io.d, 0.U(w.W), io.en) else RegEnable(io.d, io.en)
   io.q := cdc_reg
 }
 
 object ClockCrossingReg {
-  def apply [T <: Chisel.Data](in: T, en: Bool, doInit: Boolean, name: Option[String] = None): T = {
+  def apply [T <: Data](in: T, en: Bool, doInit: Boolean, name: Option[String] = None): T = {
     val cdc_reg = Module(new ClockCrossingReg(in.getWidth, doInit))
     name.foreach{ cdc_reg.suggestName(_) }
     cdc_reg.io.d := in.asUInt

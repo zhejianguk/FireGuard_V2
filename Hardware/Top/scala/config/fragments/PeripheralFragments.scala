@@ -4,8 +4,8 @@ import scala.util.matching.Regex
 import chisel3._
 import chisel3.util.{log2Up}
 
-import freechips.rocketchip.config.{Config}
-import freechips.rocketchip.devices.tilelink.{BootROMLocated}
+import org.chipsalliance.cde.config.{Config}
+import freechips.rocketchip.devices.tilelink.{BootROMLocated, PLICKey}
 import freechips.rocketchip.devices.debug.{Debug, ExportDebug, DebugModuleKey, DMI}
 import freechips.rocketchip.stage.phases.TargetDirKey
 import freechips.rocketchip.subsystem._
@@ -37,6 +37,14 @@ class WithUART(baudrate: BigInt = 115200) extends Config((site, here, up) => {
     UARTParams(address = 0x54000000L, nTxEntries = 256, nRxEntries = 256, initBaudRate = baudrate))
 })
 
+class WithNoUART extends Config((site, here, up) => {
+  case PeripheryUARTKey => Nil
+})
+
+class WithUARTFIFOEntries(txEntries: Int, rxEntries: Int) extends Config((site, here, up) => {
+  case PeripheryUARTKey => up(PeripheryUARTKey).map(_.copy(nTxEntries = txEntries, nRxEntries = rxEntries))
+})
+
 class WithSPIFlash(size: BigInt = 0x10000000) extends Config((site, here, up) => {
   // Note: the default size matches freedom with the addresses below
   case PeripherySPIFlashKey => Seq(
@@ -51,24 +59,19 @@ class WithNoDebug extends Config((site, here, up) => {
   case DebugModuleKey => None
 })
 
-class WithTLSerialLocation(masterWhere: TLBusWrapperLocation, slaveWhere: TLBusWrapperLocation) extends Config((site, here, up) => {
-  case SerialTLAttachKey => up(SerialTLAttachKey, site).copy(masterWhere = masterWhere, slaveWhere = slaveWhere)
-})
-
 class WithTLBackingMemory extends Config((site, here, up) => {
   case ExtMem => None // disable AXI backing memory
   case ExtTLMem => up(ExtMem, site) // enable TL backing memory
 })
 
-class WithSerialTLBackingMemory extends Config((site, here, up) => {
-  case ExtMem => None
-  case SerialTLKey => up(SerialTLKey, site).map { k => k.copy(
-    memParams = {
-      val memPortParams = up(ExtMem, site).get
-      require(memPortParams.nMemoryChannels == 1)
-      memPortParams.master
-    },
-    isMemoryDevice = true
-  )}
+class WithExtMemIdBits(n: Int) extends Config((site, here, up) => {
+  case ExtMem => up(ExtMem, site).map(x => x.copy(master = x.master.copy(idBits = n)))
 })
 
+class WithNoPLIC extends Config((site, here, up) => {
+  case PLICKey => None
+})
+
+class WithDebugModuleAbstractDataWords(words: Int = 16) extends Config((site, here, up) => {
+  case DebugModuleKey => up(DebugModuleKey).map(_.copy(nAbstractDataWords=words))
+})

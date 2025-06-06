@@ -3,11 +3,12 @@
 package freechips.rocketchip.amba.axi4
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem.CrossingWrapper
 import freechips.rocketchip.util._
+import freechips.rocketchip.util.EnhancedChisel3Assign
 
 class AXI4CreditedBuffer(delay: AXI4CreditedDelay)(implicit p: Parameters) extends LazyModule
 {
@@ -15,7 +16,8 @@ class AXI4CreditedBuffer(delay: AXI4CreditedDelay)(implicit p: Parameters) exten
     masterFn = p => p.copy(delay = delay + p.delay),
     slaveFn  = p => p.copy(delay = delay + p.delay))
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
       out.aw :<> in.aw.pipeline(delay.aw)
       out.w :<> in.w.pipeline(delay.w)
@@ -38,7 +40,8 @@ object AXI4CreditedBuffer {
 class AXI4CreditedSource(delay: AXI4CreditedDelay)(implicit p: Parameters) extends LazyModule
 {
   val node = AXI4CreditedSourceNode(delay)
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
       val tld = edgeOut.delay
       out.aw :<> CreditedIO.fromSender(in.aw, tld.aw.total).pipeline(delay.aw)
@@ -62,7 +65,8 @@ object AXI4CreditedSource {
 class AXI4CreditedSink(delay: AXI4CreditedDelay)(implicit p: Parameters) extends LazyModule
 {
   val node = AXI4CreditedSinkNode(delay)
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
       val tld = edgeIn.delay
       out.aw :<> in.aw.pipeline(delay.aw).toReceiver(tld.aw.total)
@@ -83,7 +87,7 @@ object AXI4CreditedSink {
   def apply()(implicit p: Parameters): AXI4CreditedSinkNode = apply(CreditedDelay(1, 1))
 }
 
-/** Synthesizeable unit tests */
+// Synthesizable unit tests
 import freechips.rocketchip.unittest._
 
 class AXI4RAMCreditedCrossing(txns: Int, params: CreditedCrossing)(implicit p: Parameters) extends LazyModule {
@@ -95,7 +99,8 @@ class AXI4RAMCreditedCrossing(txns: Int, params: CreditedCrossing)(implicit p: P
 
   island.crossAXI4In(ram.node) := toaxi.node := TLDelayer(0.1) := model.node := fuzz.node
 
-  lazy val module = new LazyModuleImp(this) with UnitTestModule {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) with UnitTestModule {
     io.finished := fuzz.module.io.finished
   }
 }

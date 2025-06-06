@@ -2,29 +2,25 @@
 
 package freechips.rocketchip.subsystem
 
-import freechips.rocketchip.config.{Field, Parameters}
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci.{ResetCrossingType, NoResetCrossing}
 import freechips.rocketchip.tile._
+import freechips.rocketchip.devices.debug.{HasPeripheryDebug}
 
 case class RocketCrossingParams(
   crossingType: ClockCrossingType = SynchronousCrossing(),
   master: TilePortParamsLike = TileMasterPortParams(),
   slave: TileSlavePortParams = TileSlavePortParams(),
   mmioBaseAddressPrefixWhere: TLBusWrapperLocation = CBUS,
-  resetCrossingType: ResetCrossingType = NoResetCrossing()
-) extends TileCrossingParamsLike {
-  def forceSeparateClockReset: Boolean = false
-}
+  resetCrossingType: ResetCrossingType = NoResetCrossing(),
+  forceSeparateClockReset: Boolean = false
+) extends TileCrossingParamsLike
 
 case class RocketTileAttachParams(
   tileParams: RocketTileParams,
-  crossingParams: RocketCrossingParams,
-  lookup: LookupByHartIdImpl
+  crossingParams: RocketCrossingParams
 ) extends CanAttachTile { type TileType = RocketTile }
-
-case object RocketTilesKey extends Field[Seq[RocketTileParams]](Nil)
-case object RocketCrossingKey extends Field[Seq[RocketCrossingParams]](List(RocketCrossingParams()))
 
 trait HasRocketTiles extends HasTiles { this: BaseSubsystem =>
   val rocketTiles = tiles.collect { case r: RocketTile => r }
@@ -34,7 +30,7 @@ trait HasRocketTiles extends HasTiles { this: BaseSubsystem =>
   }).toList
 }
 
-class RocketSubsystem(implicit p: Parameters) extends BaseSubsystem with HasRocketTiles {
+class RocketSubsystem(implicit p: Parameters) extends BaseSubsystem with HasRocketTiles with HasPeripheryDebug {
   override lazy val module = new RocketSubsystemModuleImp(this)
 }
 

@@ -3,14 +3,14 @@
 package freechips.rocketchip.stage.phases
 
 
-import chipsalliance.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{Dependency, Phase, PreservesAll, Unserializable}
 import firrtl.options.Viewer.view
 import freechips.rocketchip.stage.RocketChipOptions
-import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.system.{DefaultTestSuites, RegressionTestSuite, RocketTestSuite}
+import freechips.rocketchip.subsystem.{TilesLocated, InSubsystem, RocketTileAttachParams}
 import freechips.rocketchip.tile.XLen
 import freechips.rocketchip.util.HasRocketChipStageUtils
 import freechips.rocketchip.system.DefaultTestSuites._
@@ -72,7 +72,8 @@ class AddDefaultTests extends Phase with PreservesAll[Phase] with HasRocketChipS
       "rv32ui-p-sll")
 
     // TODO: for now only generate tests for the first core in the first subsystem
-    params(RocketTilesKey).headOption.map { tileParams =>
+    val rocketTileParams = params(TilesLocated(InSubsystem)).collect { case n: RocketTileAttachParams => n }.map(_.tileParams)
+    rocketTileParams.headOption.map { tileParams =>
       val coreParams = tileParams.core
       val vm = coreParams.useVM
       val env = if (vm) List("p", "v") else List("p")
@@ -81,11 +82,15 @@ class AddDefaultTests extends Phase with PreservesAll[Phase] with HasRocketChipS
           tests ++= env.map(rv32uf)
           if (cfg.fLen >= 64)
             tests ++= env.map(rv32ud)
+          if (cfg.minFLen <= 16)
+            tests ++= env.map(rv32uzfh)
         } else {
           tests += rv32udBenchmarks
           tests ++= env.map(rv64uf)
           if (cfg.fLen >= 64)
             tests ++= env.map(rv64ud)
+          if (cfg.minFLen <= 16)
+            tests ++= env.map(rv64uzfh)
         }
       }
       if (coreParams.useAtomics) {
@@ -133,7 +138,7 @@ class AddDefaultTests extends Phase with PreservesAll[Phase] with HasRocketChipS
       case _ => GenerateDefaultTestSuites()
     }
 
-    RocketTestSuiteAnnotation(tests) +: annotations
+    RocketTestSuiteAnnotation(tests.toSeq) +: annotations
   }
 
 }

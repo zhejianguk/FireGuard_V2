@@ -4,10 +4,8 @@ package freechips.rocketchip.tilelink
 
 import chisel3._
 import chisel3.util._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{BusMemoryLogicalTreeNode, LogicalModuleTree, LogicalTreeNode}
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMECC, TL_UL}
 import freechips.rocketchip.util._
 import freechips.rocketchip.util.property
 
@@ -18,7 +16,6 @@ class TLRAMErrors(val params: ECCParams, val addrBits: Int) extends Bundle with 
 
 class TLRAM(
     address: AddressSet,
-    parentLogicalTreeNode: Option[LogicalTreeNode] = None,
     cacheable: Boolean = true,
     executable: Boolean = true,
     atomics: Boolean = false,
@@ -26,8 +23,9 @@ class TLRAM(
     ecc: ECCParams = ECCParams(),
     sramReg: Boolean = false, // drive SRAM data output directly into a register => 1 cycle longer response
     val devName: Option[String] = None,
-    val dtsCompat: Option[Seq[String]] = None
-  )(implicit p: Parameters) extends DiplomaticSRAM(address, beatBytes, devName, dtsCompat)
+    val dtsCompat: Option[Seq[String]] = None,
+    val devOverride: Option[Device with DeviceRegName] = None
+  )(implicit p: Parameters) extends DiplomaticSRAM(address, beatBytes, devName, dtsCompat, devOverride)
 {
   val eccBytes = ecc.bytes
   val code = ecc.code
@@ -38,7 +36,7 @@ class TLRAM(
   val node = TLManagerNode(Seq(TLSlavePortParameters.v1(
     Seq(TLSlaveParameters.v1(
       address            = List(address),
-      resources          = device.reg("mem"),
+      resources          = resources,
       regionType         = if (cacheable) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable         = executable,
       supportsGet        = TransferSizes(1, beatBytes),
@@ -54,31 +52,20 @@ class TLRAM(
 
   private val outer = this
 
-  lazy val module = new LazyModuleImp(this) with HasJustOneSeqMem {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) with HasJustOneSeqMem {
     val (in, edge) = node.in(0)
 
     val indexBits = (outer.address.mask & ~(beatBytes-1)).bitCount
     val width = code.width(eccBytes*8)
     val lanes = beatBytes/eccBytes
-    val (mem, omSRAM, omMem) = makeSinglePortedByteWriteSeqMem(
+    val mem = makeSinglePortedByteWriteSeqMem(
       size = BigInt(1) << indexBits,
       lanes = lanes,
       bits = width)
     val eccCode = Some(ecc.code)
     val address = outer.address
     val laneDataBits = eccBytes * 8
-
-    parentLogicalTreeNode.map {
-      case parentLTN =>
-        def sramLogicalTreeNode = new BusMemoryLogicalTreeNode(
-          device = device,
-          omSRAMs = Seq(omSRAM),
-          busProtocol = new TL_UL(None),
-          dataECC = Some(OMECC.fromCode(ecc.code)),
-          hasAtomics = Some(atomics),
-          busProtocolSpecification = None)
-        LogicalModuleTree.add(parentLTN, sramLogicalTreeNode)
-    }
 
     /* This block has a three-stage pipeline
      * Stage A is the combinational request from TileLink A channel
@@ -332,7 +319,6 @@ object TLRAM
 {
   def apply(
     address: AddressSet,
-    parentLogicalTreeNode: Option[LogicalTreeNode] = None,
     cacheable: Boolean = true,
     executable: Boolean = true,
     atomics: Boolean = false,
@@ -342,12 +328,12 @@ object TLRAM
     devName: Option[String] = None,
   )(implicit p: Parameters): TLInwardNode =
   {
-    val ram = LazyModule(new TLRAM(address, parentLogicalTreeNode, cacheable, executable, atomics, beatBytes, ecc, sramReg, devName))
+    val ram = LazyModule(new TLRAM(address, cacheable, executable, atomics, beatBytes, ecc, sramReg, devName))
     ram.node
   }
 }
 
-/** Synthesizeable unit testing */
+// Synthesizable unit testing
 import freechips.rocketchip.unittest._
 
 class TLRAMSimple(ramBeatBytes: Int, sramReg: Boolean, txns: Int)(implicit p: Parameters) extends LazyModule {
@@ -357,7 +343,8 @@ class TLRAMSimple(ramBeatBytes: Int, sramReg: Boolean, txns: Int)(implicit p: Pa
 
   ram.node := TLDelayer(0.25) := model.node := fuzz.node
 
-  lazy val module = new LazyModuleImp(this) with UnitTestModule {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) with UnitTestModule {
     io.finished := fuzz.module.io.finished
   }
 }
@@ -380,7 +367,8 @@ class TLRAMECC(ramBeatBytes: Int, eccBytes: Int, sramReg: Boolean, txns: Int)(im
 
   ram.node := TLDelayer(0.25) := model.node := fuzz.node
 
-  lazy val module = new LazyModuleImp(this) with UnitTestModule {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) with UnitTestModule {
     io.finished := fuzz.module.io.finished
   }
 }

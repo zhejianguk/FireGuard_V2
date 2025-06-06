@@ -7,7 +7,7 @@ package chipyard
 
 import chisel3._
 
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
@@ -18,7 +18,6 @@ import freechips.rocketchip.util.{DontTouch}
 import freechips.rocketchip.guardiancouncil._
 //===== GuardianCouncil Function: End ======//
 //==========================================//
-
 
 // ---------------------------------------------------------------------
 // Base system that uses the debug test module (dtm) to bringup the core
@@ -43,9 +42,16 @@ class ChipyardSystem(implicit p: Parameters) extends ChipyardSubsystem
   val gagg     = p(GAGGCoreLocated(location)).map { GAGGCore.attach(_, this, GBUS) }
   //===== GuardianCouncil Function: End ======//
   //==========================================//
+  
+  // If there is no bootrom, the tile reset vector bundle will be tied to zero
+  if (bootROM.isEmpty) {
+    val fakeResetVectorSourceNode = BundleBridgeSource[UInt]()
+    InModuleBody { fakeResetVectorSourceNode.bundle := 0.U }
+    tileResetVectorNexusNode := fakeResetVectorSourceNode
+  }
+
   override lazy val module = new ChipyardSystemModule(this)
 }
-
 
 /**
  * Base top module implementation with periphery devices and ports, and a BOOM + Rocket subsystem
@@ -73,7 +79,7 @@ trait CanHaveMasterTLMemPort { this: BaseSubsystem =>
   private val device = new MemoryDevice
   private val idBits = memPortParamsOpt.map(_.master.idBits).getOrElse(1)
 
-  val memTLNode = TLManagerNode(memPortParamsOpt.map({ case MemoryPortParams(memPortParams, nMemoryChannels) =>
+  val memTLNode = TLManagerNode(memPortParamsOpt.map({ case MemoryPortParams(memPortParams, nMemoryChannels, _) =>
     Seq.tabulate(nMemoryChannels) { channel =>
       val base = AddressSet.misaligned(memPortParams.base, memPortParams.size)
       val filter = AddressSet(channel * mbus.blockBytes, ~((nMemoryChannels-1) * mbus.blockBytes))

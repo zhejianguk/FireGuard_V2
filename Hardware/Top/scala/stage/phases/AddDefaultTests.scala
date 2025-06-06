@@ -6,7 +6,7 @@ package chipyard.stage.phases
 import scala.util.Try
 import scala.collection.mutable
 
-import chipsalliance.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import chisel3.stage.phases.Elaborate
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
@@ -40,7 +40,7 @@ class AddDefaultTests extends Phase with HasRocketChipStageUtils {
       // If a custom test suite is set up, use the custom test suite
       annotations += CustomMakefragSnippet(p(TestSuitesKey).apply(tileParams, suiteHelper, p))
 
-    RocketTestSuiteAnnotation(suiteHelper.suites.values.toSeq) +: annotations
+    RocketTestSuiteAnnotation(suiteHelper.suites.values.toSeq) +: annotations.toSeq
   }
 
 

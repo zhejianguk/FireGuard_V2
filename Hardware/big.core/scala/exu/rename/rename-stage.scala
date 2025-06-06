@@ -20,7 +20,7 @@ package boom.exu
 import chisel3._
 import chisel3.util._
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 import boom.common._
 import boom.util._
@@ -250,7 +250,7 @@ class RenameStage(
   val remap_reqs = Wire(Vec(plWidth, new RemapReq(lregSz, pregSz)))
 
   // Generate maptable requests.
-  for ((((ren1,ren2),com),w) <- ren1_uops zip ren2_uops zip io.com_uops.reverse zipWithIndex) {
+  for ((((ren1,ren2),com),w) <- (ren1_uops zip ren2_uops zip io.com_uops.reverse).zipWithIndex) {
     map_reqs(w).lrs1 := ren1.lrs1
     map_reqs(w).lrs2 := ren1.lrs2
     map_reqs(w).lrs3 := ren1.lrs3

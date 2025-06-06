@@ -5,7 +5,7 @@ import chisel3.util._
 import chisel3.experimental.{IntParam, BaseModule}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.subsystem.BaseSubsystem
-import freechips.rocketchip.config.{Parameters, Field, Config}
+import org.chipsalliance.cde.config.{Parameters, Field, Config}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper.{HasRegMap, RegField}
 import freechips.rocketchip.tilelink._
@@ -13,7 +13,7 @@ import freechips.rocketchip.util.UIntIsOneOf
 
 // DOC include start: GCD params
 case class GCDParams(
-  address: BigInt = 0x2000,
+  address: BigInt = 0x1000,
   width: Int = 32,
   useAXI4: Boolean = false,
   useBlackBox: Boolean = true)
@@ -165,17 +165,17 @@ trait CanHavePeripheryGCD { this: BaseSubsystem =>
     case Some(params) => {
       if (params.useAXI4) {
         val gcd = LazyModule(new GCDAXI4(params, pbus.beatBytes)(p))
-        pbus.toSlave(Some(portName)) {
+        pbus.coupleTo(portName) {
           gcd.node :=
           AXI4Buffer () :=
           TLToAXI4 () :=
           // toVariableWidthSlave doesn't use holdFirstDeny, which TLToAXI4() needsx
-          TLFragmenter(pbus.beatBytes, pbus.blockBytes, holdFirstDeny = true)
+          TLFragmenter(pbus.beatBytes, pbus.blockBytes, holdFirstDeny = true) := _
         }
         Some(gcd)
       } else {
         val gcd = LazyModule(new GCDTL(params, pbus.beatBytes)(p))
-        pbus.toVariableWidthSlave(Some(portName)) { gcd.node }
+        pbus.coupleTo(portName) { gcd.node := TLFragmenter(pbus.beatBytes, pbus.blockBytes) := _ }
         Some(gcd)
       }
     }
@@ -201,7 +201,7 @@ trait CanHavePeripheryGCDModuleImp extends LazyModuleImp {
 
 
 // DOC include start: GCD config fragment
-class WithGCD(useAXI4: Boolean, useBlackBox: Boolean) extends Config((site, here, up) => {
+class WithGCD(useAXI4: Boolean = false, useBlackBox: Boolean = false) extends Config((site, here, up) => {
   case GCDKey => Some(GCDParams(useAXI4 = useAXI4, useBlackBox = useBlackBox))
 })
 // DOC include end: GCD config fragment

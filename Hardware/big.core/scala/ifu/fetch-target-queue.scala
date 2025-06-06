@@ -19,7 +19,7 @@ package boom.ifu
 import chisel3._
 import chisel3.util._
 
-import freechips.rocketchip.config.{Parameters}
+import org.chipsalliance.cde.config.{Parameters}
 import freechips.rocketchip.util.{Str}
 
 import boom.common._
@@ -128,6 +128,7 @@ class FetchTargetQueue(implicit p: Parameters) extends BoomModule
     val ras_update = Output(Bool())
     val ras_update_idx = Output(UInt(log2Ceil(nRasEntries).W))
     val ras_update_pc  = Output(UInt(vaddrBitsExtended.W))
+
     //===== GuardianCouncil Function: Start ====//
     val gh_ftq_idx                                = Input(Vec(coreWidth, UInt(log2Ceil(ftqSz).W)))
     val jal_or_jlar_target                        = Output(Vec(coreWidth, UInt(vaddrBitsExtended.W)))
@@ -366,8 +367,7 @@ class FetchTargetQueue(implicit p: Parameters) extends BoomModule
   for (w <- 0 until coreWidth) {
     io.debug_fetch_pc(w) := RegNext(pcs(io.debug_ftq_idx(w)))
   }
-
-  //===== GuardianCouncil Function: Start ====//
+//===== GuardianCouncil Function: Start ====//
   val gh_mispredict                                = Wire(Vec(coreWidth, Bool()))
   val gh_mispredict_ooo                            = Wire(Vec(coreWidth, Bool()))
   val gh_ptr                                       = Wire(Vec(coreWidth, UInt(log2Ceil(ftqSz).W)))

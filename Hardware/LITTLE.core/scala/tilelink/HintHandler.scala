@@ -3,10 +3,11 @@
 package freechips.rocketchip.tilelink
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.tilelink.TLROM
+import freechips.rocketchip.util.EnhancedChisel3Assign
 
 // Acks Hints for managers that don't support them or Acks all Hints if !passthrough
 class TLHintHandler(passthrough: Boolean = true)(implicit p: Parameters) extends LazyModule
@@ -23,7 +24,8 @@ class TLHintHandler(passthrough: Boolean = true)(implicit p: Parameters) extends
           else if (m.regionType != RegionType.GET_EFFECTS) m.supportsGet
           else TransferSizes.none)})})
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
       out <> in
 
@@ -121,7 +123,7 @@ object TLHintHandler
   }
 }
 
-/** Synthesizeable unit tests */
+// Synthesizable unit tests
 import freechips.rocketchip.unittest._
 
 //TODO ensure handler will pass through hints to clients that can handle them themselves
@@ -156,7 +158,8 @@ class TLRAMHintHandler(txns: Int)(implicit p: Parameters) extends LazyModule {
     := model.node
     := fuzz.node)
 
-  lazy val module = new LazyModuleImp(this) with UnitTestModule {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) with UnitTestModule {
     io.finished := fuzz.module.io.finished
   }
 }

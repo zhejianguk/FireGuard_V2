@@ -13,7 +13,7 @@ package boom.exu
 
 import chisel3._
 import chisel3.util._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.tile.FPConstants._
 import freechips.rocketchip.tile
 import boom.common._
@@ -122,7 +122,7 @@ class FDivSqrtUnit(implicit p: Parameters)
     r_buffer_req.uop.br_mask := GetNewBrMask(io.brupdate, io.req.bits.uop)
     r_buffer_fin <> fdiv_decoder.io.sigs
 
-    r_buffer_fin.rm := io.fcsr_rm
+    r_buffer_fin.rm := Mux(ImmGenRm(io.req.bits.uop.imm_packed) === 7.U, io.fcsr_rm, ImmGenRm(io.req.bits.uop.imm_packed))
     r_buffer_fin.typ := 0.U // unused for fdivsqrt
     val tag = fdiv_decoder.io.sigs.typeTagIn
     r_buffer_fin.in1 := unbox(io.req.bits.rs1_data, tag, Some(tile.FType.D))

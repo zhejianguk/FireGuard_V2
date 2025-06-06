@@ -2,7 +2,7 @@ package freechips.rocketchip.guardiancouncil
 
 import chisel3._
 import chisel3.util._
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.tile._
 //===== GuardianCouncil Function: Start ====//
 import freechips.rocketchip.guardiancouncil._

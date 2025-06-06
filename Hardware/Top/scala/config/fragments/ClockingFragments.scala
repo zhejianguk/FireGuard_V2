@@ -4,7 +4,7 @@ import scala.util.matching.Regex
 import chisel3._
 import chisel3.util.{log2Up}
 
-import freechips.rocketchip.config.{Field, Parameters, Config}
+import org.chipsalliance.cde.config.{Field, Parameters, Config}
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.diplomacy._
@@ -13,7 +13,6 @@ import freechips.rocketchip.tilelink.{HasTLBusParams}
 
 import chipyard._
 import chipyard.clocking._
-
 
 // The default RocketChip BaseSubsystem drives its diplomatic clock graph
 // with the implicit clocks of Subsystem. Don't do that, instead we extend
@@ -37,18 +36,10 @@ class WithTileFrequency(fMHz: Double, hartId: Option[Int] = None) extends ClockN
   },
   fMHz)
 
-class WithPeripheryBusFrequencyAsDefault extends Config((site, here, up) => {
-  case DefaultClockFrequencyKey => (site(PeripheryBusKey).dtsFrequency.get / (1000 * 1000)).toDouble
-})
-
-class WithSystemBusFrequencyAsDefault extends Config((site, here, up) => {
-  case DefaultClockFrequencyKey => (site(SystemBusKey).dtsFrequency.get / (1000 * 1000)).toDouble
-})
-
 class BusFrequencyAssignment[T <: HasTLBusParams](re: Regex, key: Field[T]) extends Config((site, here, up) => {
   case ClockFrequencyAssignersKey => up(ClockFrequencyAssignersKey, site) ++
     Seq((cName: String) => site(key).dtsFrequency.flatMap { f =>
-      re.findFirstIn(cName).map {_ => (f / (1000 * 1000)).toDouble }
+      re.findFirstIn(cName).map {_ => (f.toDouble / (1000 * 1000)) }
     })
 })
 
@@ -113,24 +104,6 @@ class WithFrontBusFrequency(freqMHz: Double) extends Config((site, here, up) => 
 class WithControlBusFrequency(freqMHz: Double) extends Config((site, here, up) => {
   case ControlBusKey => up(ControlBusKey, site).copy(dtsFrequency = Some(BigInt((freqMHz * 1e6).toLong)))
 })
-class WithGCBusFrequency(freqMHz: Double) extends Config((site, here, up) => {
-  case GCBusKey => up(GCBusKey, site).copy(dtsFrequency = Some(BigInt((freqMHz * 1e6).toLong)))
-})
 
 class WithRationalMemoryBusCrossing extends WithSbusToMbusCrossingType(RationalCrossing(Symmetric))
 class WithAsynchrousMemoryBusCrossing extends WithSbusToMbusCrossingType(AsynchronousCrossing())
-
-class WithTestChipBusFreqs extends Config(
-  // Frequency specifications
-  new chipyard.config.WithTileFrequency(1600.0) ++       // Matches the maximum frequency of U540
-  new chipyard.config.WithSystemBusFrequency(800.0) ++   // Put the system bus at a lower freq, representative of ncore working at a lower frequency than the tiles. Same freq as U540
-  new chipyard.config.WithMemoryBusFrequency(1000.0) ++  // 2x the U540 freq (appropriate for a 128b Mbus)
-  new chipyard.config.WithPeripheryBusFrequency(800.0) ++  // Match the sbus and pbus frequency
-  new chipyard.config.WithSystemBusFrequencyAsDefault ++ // All unspecified clock frequencies, notably the implicit clock, will use the sbus freq (800 MHz)
-  //  Crossing specifications
-  new chipyard.config.WithCbusToPbusCrossingType(AsynchronousCrossing()) ++ // Add Async crossing between PBUS and CBUS
-  new chipyard.config.WithSbusToMbusCrossingType(AsynchronousCrossing()) ++ // Add Async crossings between backside of L2 and MBUS
-  new freechips.rocketchip.subsystem.WithRationalRocketTiles ++   // Add rational crossings between RocketTile and uncore
-  new boom.common.WithRationalBoomTiles ++ // Add rational crossings between BoomTile and uncore
-  new testchipip.WithAsynchronousSerialSlaveCrossing // Add Async crossing between serial and MBUS. Its master-side is tied to the FBUS
-)

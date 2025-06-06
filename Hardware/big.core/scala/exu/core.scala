@@ -33,13 +33,12 @@ import java.nio.file.{Paths}
 import chisel3._
 import chisel3.util._
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.rocket.Instructions._
-import freechips.rocketchip.rocket.{Causes, PRV}
+import freechips.rocketchip.tile.{TraceBundle}
+import freechips.rocketchip.rocket.{Causes, PRV, TracedInstruction}
 import freechips.rocketchip.util.{Str, UIntIsOneOf, CoreMonitorBundle}
 import freechips.rocketchip.devices.tilelink.{PLICConsts, CLINTConsts}
-
-import testchipip.{ExtendedTracedInstruction}
 
 import boom.common._
 import boom.ifu.{GlobalHistory, HasBoomFrontendParameters}
@@ -47,14 +46,14 @@ import boom.exu.FUConstants._
 import boom.util._
 
 //===== GuardianCouncil Function: Start ====//
-import freechips.rocketchip.r._
 import freechips.rocketchip.guardiancouncil._
 //===== GuardianCouncil Function: End   ====//
+
 
 /**
  * Top level core object that connects the Frontend to the rest of the pipeline.
  */
-class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
+class BoomCore()(implicit p: Parameters) extends BoomModule
   with HasBoomFrontendParameters // TODO: Don't add this trait
 {
   val io = new freechips.rocketchip.tile.CoreBundle
@@ -66,10 +65,9 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     val rocc = Flipped(new freechips.rocketchip.tile.RoCCCoreIO())
     val lsu = Flipped(new boom.lsu.LSUCoreIO)
     val ptw_tlb = new freechips.rocketchip.rocket.TLBPTWIO()
-    val trace = Output(Vec(coreParams.retireWidth, new ExtendedTracedInstruction))
+    val trace = Output(new TraceBundle)
     val fcsr_rm = UInt(freechips.rocketchip.tile.FPConstants.RM_SZ.W)
 
-    
     //===== GuardianCouncil Function: Start ====//
     val pc = Output(Vec(coreWidth, UInt(vaddrBitsExtended.W)))
     val inst = Output(Vec(coreWidth, UInt(32.W)))
@@ -152,13 +150,14 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
 
   //===== GuardianCouncil Function: Start ====//
   val r_syscall                                    = Wire(Bool())
+
   val iregfile         = Module(new RegisterFileSynthesizable(
                              numIntPhysRegs,
                              numIrfReadPorts + coreWidth, // additional ports for GH_Subsystem
                              numIrfWritePorts,
                              xLen,
                              Seq.fill(memWidth) {true} ++ exe_units.bypassable_write_port_mask)) // bypassable ll_wb
-  //===== GuardianCouncil Function: End  ====//
+    //===== GuardianCouncil Function: End  ====//
   
   val pregfile         = Module(new RegisterFileSynthesizable(
                             ftqSz,
@@ -175,9 +174,9 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
                                                                    (if (usingRoCC) 1 else 0)))
   val iregister_read   = Module(new RegisterRead(
                            issue_units.map(_.issueWidth).sum,
-                           exe_units.withFilter(_.readsIrf).map(_.supportedFuncUnits),
+                           exe_units.withFilter(_.readsIrf).map(_.supportedFuncUnits).toSeq,
                            numIrfReadPorts,
-                           exe_units.withFilter(_.readsIrf).map(x => 2),
+                           exe_units.withFilter(_.readsIrf).map(x => 2).toSeq,
                            exe_units.numTotalBypassPorts,
                            jmp_unit.numBypassStages,
                            xLen))
@@ -764,10 +763,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   //-------------------------------------------------------------
   // Rob Allocation Logic
 
-  val ic_stall = WireInit(0.U(1.W))
   val r_exception_record = RegInit(0.U(1.W))
-
-
   rob.io.enq_valids := dis_fire
   rob.io.enq_uops   := dis_uops
   rob.io.enq_partial_stall := dis_stalls.last // TODO come up with better ROB compacting scheme.
@@ -1012,6 +1008,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   //-------------------------------------------------------------
   //-------------------------------------------------------------
 
+  // Register Read <- Issue (rrd <- iss)
   //===== GuardianCouncil Function: Start ====//
   // Register Read <- Issue (rrd <- iss)
   for (i <- 0 until numIrfReadPorts) {
@@ -1248,7 +1245,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     // Connect FPIU
     ll_wbarb.io.in(1)        <> fp_pipeline.io.to_int
     // Connect FLDs
-    fp_pipeline.io.ll_wports <> exe_units.memory_units.map(_.io.ll_fresp)
+    fp_pipeline.io.ll_wports <> exe_units.memory_units.map(_.io.ll_fresp).toSeq
   }
   if (usingRoCC) {
     require(usingFPU)
@@ -1352,7 +1349,7 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
   rob.io.gh_effective_valid                      := jmp_unit.io.iresp.valid
   rob.io.gh_effective_jalr_target                := gh_effective_jalr_target_reg
   //===== GuardianCouncil Function: End   ====//
-  
+
   assert (!(csr.io.singleStep), "[core] single-step is unsupported.")
 
 
@@ -1498,17 +1495,22 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     }
   }
 
-  if (usingTrace) {
+  io.trace := DontCare
+  io.trace.time := csr.io.time
+  io.trace.insns map (t => t.valid := false.B)
+  io.trace.custom.get.asInstanceOf[BoomTraceBundle].rob_empty := rob.io.empty
+
+  if (trace) {
     for (w <- 0 until coreWidth) {
       // Delay the trace so we have a cycle to pull PCs out of the FTQ
-      io.trace(w).valid      := RegNext(rob.io.commit.arch_valids(w))
+      io.trace.insns(w).valid      := RegNext(rob.io.commit.arch_valids(w))
 
       // Recalculate the PC
       io.ifu.debug_ftq_idx(w) := rob.io.commit.uops(w).ftq_idx
       val iaddr = (AlignPCToBoundary(io.ifu.debug_fetch_pc(w), icBlockBytes)
                    + RegNext(rob.io.commit.uops(w).pc_lob)
                    - Mux(RegNext(rob.io.commit.uops(w).edge_inst), 2.U, 0.U))(vaddrBits-1,0)
-      io.trace(w).iaddr      := Sext(iaddr, xLen)
+      io.trace.insns(w).iaddr      := Sext(iaddr, xLen)
 
       def getInst(uop: MicroOp, inst: UInt): UInt = {
         Mux(uop.is_rvc, Cat(0.U(16.W), inst(15,0)), inst)
@@ -1520,8 +1522,8 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
 
       // use debug_insts instead of uop.debug_inst to use the rob's debug_inst_mem
       // note: rob.debug_insts comes 1 cycle later
-      io.trace(w).insn       := getInst(RegNext(rob.io.commit.uops(w)), rob.io.commit.debug_insts(w))
-      io.trace(w).wdata.map { _ := RegNext(getWdata(rob.io.commit.uops(w), rob.io.commit.debug_wdata(w))) }
+      io.trace.insns(w).insn       := getInst(RegNext(rob.io.commit.uops(w)), rob.io.commit.debug_insts(w))
+      io.trace.insns(w).wdata.map { _ := RegNext(getWdata(rob.io.commit.uops(w), rob.io.commit.debug_wdata(w))) }
 
       // Comment out this assert because it blows up FPGA synth-asserts
       // This tests correctedness of the debug_inst mem
@@ -1530,22 +1532,20 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
       // }
       // This tests correctedness of recovering pcs through ftq debug ports
       // when (RegNext(rob.io.commit.valids(w))) {
-      //   assert(Sext(io.trace(w).iaddr, xLen) ===
+      //   assert(Sext(io.trace.insns(w).iaddr, xLen) ===
       //     RegNext(Sext(rob.io.commit.uops(w).debug_pc(vaddrBits-1,0), xLen)))
       // }
 
       // These csr signals do not exactly match up with the ROB commit signals.
-      io.trace(w).priv       := RegNext(csr.io.status.prv)
+      io.trace.insns(w).priv       := RegNext(Cat(RegNext(csr.io.status.debug), csr.io.status.prv))
       // Can determine if it is an interrupt or not based on the MSB of the cause
-      io.trace(w).exception  := RegNext(rob.io.com_xcpt.valid && !rob.io.com_xcpt.bits.cause(xLen - 1))
-      io.trace(w).interrupt  := RegNext(rob.io.com_xcpt.valid && rob.io.com_xcpt.bits.cause(xLen - 1))
-      io.trace(w).cause      := RegNext(rob.io.com_xcpt.bits.cause)
-      io.trace(w).tval       := RegNext(csr.io.tval)
+      io.trace.insns(w).exception  := RegNext(rob.io.com_xcpt.valid && !rob.io.com_xcpt.bits.cause(xLen - 1)) && (w == 0).B
+      io.trace.insns(w).interrupt  := RegNext(rob.io.com_xcpt.valid && rob.io.com_xcpt.bits.cause(xLen - 1)) && (w == 0).B
+      io.trace.insns(w).cause      := RegNext(rob.io.com_xcpt.bits.cause)
+      io.trace.insns(w).tval       := RegNext(csr.io.tval)
     }
     dontTouch(io.trace)
   } else {
-    io.trace := DontCare
-    io.trace map (t => t.valid := false.B)
     io.ifu.debug_ftq_idx := DontCare
   }
 
@@ -1630,10 +1630,5 @@ class BoomCore(usingTrace: Boolean)(implicit p: Parameters) extends BoomModule
     g_counter_reg                                 := Mux(io.if_correct_process.asBool, g_counter_reg + 1.U, g_counter_reg)
   }
   io.g_counter                                    := g_counter_reg
-
-  // revisit 
-  csr.io.pfarf_valid                              := 0.U
-  csr.io.fcsr_in                                  := 0.U
-
   //===== GuardianCouncil Function: End ====//
 }

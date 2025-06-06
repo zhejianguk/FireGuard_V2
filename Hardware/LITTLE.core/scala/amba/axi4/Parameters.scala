@@ -2,18 +2,26 @@
 
 package freechips.rocketchip.amba.axi4
 
-import Chisel._
 import chisel3.internal.sourceinfo.SourceInfo
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
 import scala.math.max
+import chisel3.util.{isPow2, log2Up}
 
+/**
+  * Parameters for AXI4 slave
+  *
+  * @param address base address
+  * @param resources device tree resource
+  * @param regionType memory region type
+  * @param executable whether processor can execute from this memory
+  */
 case class AXI4SlaveParameters(
   address:       Seq[AddressSet],
   resources:     Seq[Resource] = Nil,
   regionType:    RegionType.T  = RegionType.GET_EFFECTS,
-  executable:    Boolean       = false, // processor can execute from this memory
+  executable:    Boolean       = false,
   nodePath:      Seq[BaseNode] = Seq(),
   supportsWrite: TransferSizes = TransferSizes.none,
   supportsRead:  TransferSizes = TransferSizes.none,

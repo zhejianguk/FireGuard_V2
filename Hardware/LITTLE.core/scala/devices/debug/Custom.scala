@@ -7,7 +7,7 @@ import chisel3.util._
 import chisel3.internal.sourceinfo.SourceInfo
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, NexusNode, RenderedEdge,
   SimpleNodeImp, SinkNode, SourceNode, ValName}
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 case class DebugCustomParams(
   addrs: List[Int],
@@ -67,7 +67,8 @@ class DebugCustomXbar(
     outputRequiresInput
   )
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     // require only one sink
     require(node.out.size == 1, "Must have exactly one sink node, not ${node.out.size}")
     // send address to all sources

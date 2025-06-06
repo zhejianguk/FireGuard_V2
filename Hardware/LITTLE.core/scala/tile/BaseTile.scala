@@ -4,11 +4,9 @@ package freechips.rocketchip.tile
 
 import Chisel._
 
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.{HasLogicalTreeNode}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{GenericLogicalTreeNode, LogicalTreeNode}
 
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.rocket._
@@ -109,9 +107,25 @@ trait HasNonDiplomaticTileParameters {
     val f = if (tileParams.core.fpu.nonEmpty) "f" else ""
     val d = if (tileParams.core.fpu.nonEmpty && tileParams.core.fpu.get.fLen > 32) "d" else ""
     val c = if (tileParams.core.useCompressed) "c" else ""
-    val b = if (tileParams.core.useBitManip) "b" else ""
     val v = if (tileParams.core.useVector) "v" else ""
-    s"rv${p(XLen)}$ie$m$a$f$d$c$b$v"
+    val h = if (usingHypervisor) "h" else ""
+    val multiLetterExt = (
+      // rdcycle[h], rdinstret[h] is implemented
+      // rdtime[h] is not implemented, and could be provided by software emulation
+      // see https://github.com/chipsalliance/rocket-chip/issues/3207
+      //Some(Seq("zicntr")) ++
+      Option.when(tileParams.core.useConditionalZero)(Seq("zicond")) ++
+      Some(Seq("zicsr", "zifencei", "zihpm")) ++
+      Option.when(tileParams.core.fpu.nonEmpty && tileParams.core.fpu.get.fLen >= 16 && tileParams.core.fpu.get.minFLen <= 16)(Seq("zfh")) ++
+      Option.when(tileParams.core.useBitManip)(Seq("zba", "zbb", "zbc")) ++
+      Option.when(tileParams.core.hasBitManipCrypto)(Seq("zbkb", "zbkc", "zbkx")) ++
+      Option.when(tileParams.core.useBitManip)(Seq("zbs")) ++
+      Option.when(tileParams.core.useCryptoNIST)(Seq("zknd", "zkne", "zknh")) ++
+      Option.when(tileParams.core.useCryptoSM)(Seq("zksed", "zksh")) ++
+      tileParams.core.customIsaExt.map(Seq(_))
+    ).flatten
+    val multiLetterString = multiLetterExt.mkString("_")
+    s"rv${p(XLen)}$ie$m$a$f$d$c$v$h$multiLetterString"
   }
 
   def tileProperties: PropertyMap = {
@@ -181,7 +195,7 @@ trait HasTileParameters extends HasNonDiplomaticTileParameters {
     }
   def vpnBits: Int = vaddrBits - pgIdxBits
   def ppnBits: Int = paddrBits - pgIdxBits
-  def vpnBitsExtended: Int = vpnBits + (vaddrBits < xLen).toInt
+  def vpnBitsExtended: Int = vpnBits + (if (vaddrBits < xLen) 1 + usingHypervisor.toInt else 0)
   def vaddrBitsExtended: Int = vpnBitsExtended + pgIdxBits
 }
 
@@ -190,7 +204,6 @@ abstract class BaseTile private (val crossing: ClockCrossingType, q: Parameters)
     extends LazyModule()(q)
     with CrossesToOnlyOneClockDomain
     with HasNonDiplomaticTileParameters
-    with HasLogicalTreeNode
 {
   // Public constructor alters Parameters to supply some legacy compatibility keys
   def this(tileParams: TileParams, crossing: ClockCrossingType, lookup: LookupByHartIdImpl, p: Parameters) = {
@@ -244,6 +257,7 @@ abstract class BaseTile private (val crossing: ClockCrossingType, q: Parameters)
   /** Node for supplying a reset vector that processors in this tile might begin fetching instructions from as they come out of reset. */
   val resetVectorNode: BundleBridgeInwardNode[UInt] =
     resetVectorSinkNode := resetVectorNexusNode := BundleBridgeNameNode("reset_vector")
+
   //===== GuardianCouncil Function: Start ====//
   val ic_counter_SRNode           = BundleBridgeSource[UInt](Some(() => UInt((16*GH_GlobalParams.GH_NUM_CORES).W)))
   val ic_counter_SKNode           = BundleBridgeSink[UInt](Some(() => UInt(16.W)))
@@ -282,7 +296,7 @@ abstract class BaseTile private (val crossing: ClockCrossingType, q: Parameters)
 
   val agg_packet_in_SKNode        = BundleBridgeSink[UInt](Some(() => UInt(128.W)))
   //===== GuardianCouncil Function: End ====//
-  
+
   /** Nodes for connecting NMI interrupt sources and vectors into the tile */
   val nmiNexusNode: BundleBridgeNode[NMI] = BundleBroadcast[NMI]()
   val nmiSinkNode = BundleBridgeSink[NMI](Some(() => new NMI(visiblePhysAddrBits)))
@@ -312,10 +326,10 @@ abstract class BaseTile private (val crossing: ClockCrossingType, q: Parameters)
 
   protected def traceRetireWidth = tileParams.core.retireWidth
   /** Node for the core to drive legacy "raw" instruction trace. */
-  val traceSourceNode = BundleBridgeSource(() => Vec(traceRetireWidth, new TracedInstruction()))
-  private val traceNexus = BundleBroadcast[Vec[TracedInstruction]]() // backwards compatiblity; not blocked during stretched reset
+  val traceSourceNode = BundleBridgeSource(() => new TraceBundle)
+  private val traceNexus = BundleBroadcast[TraceBundle]() // backwards compatiblity; not blocked during stretched reset
   /** Node for external consumers to source a legacy instruction trace from the core. */
-  val traceNode: BundleBridgeOutwardNode[Vec[TracedInstruction]] = traceNexus := traceSourceNode
+  val traceNode: BundleBridgeOutwardNode[TraceBundle] = traceNexus := traceSourceNode
 
   protected def traceCoreParams = new TraceCoreParams()
   /** Node for core to drive instruction trace conforming to RISC-V Processor Trace spec V1.0 */
@@ -396,9 +410,6 @@ abstract class BaseTile private (val crossing: ClockCrossingType, q: Parameters)
     * in subclasses of this class.
     */
  def makeSlaveBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = TLBuffer(BufferParams.none)
-
-  /** Use for ObjectModel representation of this tile. Subclasses might override this. */
-  val logicalTreeNode: LogicalTreeNode = new GenericLogicalTreeNode
 
   /** Can be used to access derived params calculated by HasCoreParameters
     *

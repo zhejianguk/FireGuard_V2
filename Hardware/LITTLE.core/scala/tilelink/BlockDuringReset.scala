@@ -3,7 +3,7 @@
 package freechips.rocketchip.tilelink
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.{BlockDuringReset, EnhancedChisel3Assign}
 
@@ -13,7 +13,8 @@ class TLBlockDuringReset(stretchResetCycles: Int = 0)
 {
   val node = TLAdapterNode()
   override def shouldBeInlined = true
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
       out.a :<> BlockDuringReset(in .a, stretchResetCycles)
       in .d :<> BlockDuringReset(out.d, stretchResetCycles)

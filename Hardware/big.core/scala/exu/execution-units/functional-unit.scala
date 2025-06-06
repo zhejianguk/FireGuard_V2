@@ -18,10 +18,8 @@ package boom.exu
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.chiselName
 
-import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.rocket.ALU._
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile
 import freechips.rocketchip.rocket.{PipelinedMultiplier,BP,BreakpointUnit,Causes,CSR}
@@ -186,6 +184,7 @@ abstract class FunctionalUnit(
     val bp = if (isMemAddrCalcUnit) Input(Vec(nBreakpoints, new BP)) else null
     val mcontext = if (isMemAddrCalcUnit) Input(UInt(coreParams.mcontextWidth.W)) else null
     val scontext = if (isMemAddrCalcUnit) Input(UInt(coreParams.scontextWidth.W)) else null
+
   })
 }
 
@@ -278,7 +277,6 @@ abstract class PipelinedFunctionalUnit(
  * @param numStages how many pipeline stages does the functional unit have
  * @param dataWidth width of the data being operated on in the functional unit
  */
-@chiselName
 class ALUUnit(isJmpUnit: Boolean = false, numStages: Int = 1, dataWidth: Int)(implicit p: Parameters)
   extends PipelinedFunctionalUnit(
     numStages = numStages,

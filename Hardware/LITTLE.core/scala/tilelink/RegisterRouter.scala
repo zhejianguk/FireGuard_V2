@@ -2,19 +2,19 @@
 
 package freechips.rocketchip.tilelink
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import chisel3.RawModule
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMRegister, OMRegisterMap}
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.util._
 
 import scala.math.min
 
 class TLRegisterRouterExtraBundle(val sourceBits: Int, val sizeBits: Int) extends Bundle {
-  val source = UInt(width = sourceBits max 1)
-  val size   = UInt(width = sizeBits max 1)
+  val source = UInt((sourceBits max 1).W)
+  val size   = UInt((sizeBits max 1).W)
 }
 
 case object TLRegisterRouterExtra extends ControlKey[TLRegisterRouterExtraBundle]("tlrr_extra")
@@ -61,7 +61,7 @@ case class TLRegisterNode(
 
   // Calling this method causes the matching TL2 bundle to be
   // configured to route all requests to the listed RegFields.
-  def regmap(mapping: RegField.Map*) : OMRegisterMap = {
+  def regmap(mapping: RegField.Map*) = {
     val (bundleIn, edge) = this.in(0)
     val a = bundleIn.a
     val d = bundleIn.d
@@ -98,23 +98,18 @@ case class TLRegisterNode(
     d.bits.opcode := Mux(out.bits.read, TLMessages.AccessAckData, TLMessages.AccessAck)
 
     // Tie off unused channels
-    bundleIn.b.valid := Bool(false)
-    bundleIn.c.ready := Bool(true)
-    bundleIn.e.ready := Bool(true)
+    bundleIn.b.valid := false.B
+    bundleIn.c.ready := true.B
+    bundleIn.e.ready := true.B
 
     genRegDescsJson(mapping:_*)
-    genOMRegMap(mapping:_*)
-  }
-
-  def genOMRegMap(mapping: RegField.Map*): OMRegisterMap = {
-    OMRegister.convert(mapping = mapping:_*)
   }
 
   def genRegDescsJson(mapping: RegField.Map*): Unit = {
     // Dump out the register map for documentation purposes.
     val base = address.head.base
     val baseHex = s"0x${base.toInt.toHexString}"
-    val name = s"deviceAt${baseHex}" //TODO: It would be better to name this other than "Device at ...."
+    val name = s"${device.describe(ResourceBindings()).name}.At${baseHex}"
     val json = GenRegDescsAnno.serialize(base, name, mapping:_*)
     var suffix = 0
     while( ElaborationArtefacts.contains(s"${baseHex}.${suffix}.regmap.json")) {

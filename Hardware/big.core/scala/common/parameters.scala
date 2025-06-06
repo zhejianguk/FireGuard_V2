@@ -12,7 +12,7 @@ import freechips.rocketchip.rocket._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem.{MemoryPortParams}
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.devices.tilelink.{BootROMParams, CLINTParams, PLICParams}
 
 import boom.ifu._
@@ -96,6 +96,7 @@ case class BoomCoreParams(
   clockGate: Boolean = false,
   mcontextWidth: Int = 0,
   scontextWidth: Int = 0,
+  trace: Boolean = false,
 
   /* debug stuff */
   enableCommitLogPrintf: Boolean = false,
@@ -105,14 +106,25 @@ case class BoomCoreParams(
 // DOC include end: BOOM Parameters
 ) extends freechips.rocketchip.tile.CoreParams
 {
+  override def traceCustom = Some(new BoomTraceBundle)
   val haveFSDirty = true
   val pmpGranularity: Int = 4
   val instBits: Int = 16
   val lrscCycles: Int = 80 // worst case is 14 mispredicted branches + slop
   val retireWidth = decodeWidth
   val jumpInFrontend: Boolean = false // unused in boom
+  val useBitManip = false
+  val useBitManipCrypto = false
+  val useCryptoNIST = false
+  val useCryptoSM = false
+  val traceHasWdata = trace
+  val useConditionalZero = false
 
   override def customCSRs(implicit p: Parameters) = new BoomCustomCSRs
+}
+
+class BoomTraceBundle extends Bundle {
+  val rob_empty = Bool()
 }
 
 /**
@@ -137,6 +149,9 @@ class BoomCustomCSRs(implicit p: Parameters) extends freechips.rocketchip.tile.C
     Some(CustomCSR(chickenCSRId, mask, Some(init)))
   }
   def disableOOO = getOrElse(chickenCSR, _.value(3), true.B)
+  def marchid = CustomCSR.constant(CSRs.marchid, BigInt(2))
+
+  override def decls: Seq[CustomCSR] = super.decls :+ marchid
 }
 
 /**
@@ -177,6 +192,7 @@ trait HasBoomCoreParameters extends freechips.rocketchip.tile.HasCoreParameters
   val usingFDivSqrt = boomParams.fpu.isDefined && boomParams.fpu.get.divSqrt
 
   val mulDivParams = boomParams.mulDiv.getOrElse(MulDivParams())
+  val trace = boomParams.trace
   // TODO: Allow RV32IF
   require(!(xLen == 32 && usingFPU), "RV32 does not support fp")
 

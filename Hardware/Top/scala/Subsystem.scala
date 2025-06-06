@@ -9,12 +9,11 @@ import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo}
 
 import freechips.rocketchip.prci._
-import freechips.rocketchip.config.{Field, Parameters}
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp, ExportDebug, DebugModuleKey}
+import freechips.rocketchip.devices.debug.{HasPeripheryDebug, ExportDebug, DebugModuleKey}
+import sifive.blocks.devices.uart.{HasPeripheryUART, PeripheryUARTKey}
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMInterrupt}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{RocketTileLogicalTreeNode, LogicalModuleTree}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
@@ -47,15 +46,61 @@ trait CanHaveHTIF { this: BaseSubsystem =>
   }
 }
 
+// This trait adds the "chosen" node to DTS, which
+// can be used to pass information to OS about the earlycon
+case object ChosenInDTS extends Field[Boolean](true)
+trait CanHaveChosenInDTS { this: BaseSubsystem =>
+  if (p(ChosenInDTS)) {
+    this match {
+      case t: HasPeripheryUART if (!p(PeripheryUARTKey).isEmpty) => {
+        val chosen = new Device {
+          def describe(resources: ResourceBindings): Description = {
+            val stdout = resources("stdout").map(_.value)
+            Description("chosen", resources("uart").headOption.map { case Binding(_, value) =>
+              "stdout-path" -> Seq(value)
+            }.toMap)
+          }
+        }
+        ResourceBinding {
+          t.uarts.foreach(u => Resource(chosen, "uart").bind(ResourceAlias(u.device.label)))
+        }
+      }
+      case _ =>
+    }
+  }
+}
+
 class ChipyardSubsystem(implicit p: Parameters) extends BaseSubsystem
   with HasTiles
+  with HasPeripheryDebug
   with CanHaveHTIF
+  with CanHaveChosenInDTS
 {
   def coreMonitorBundles = tiles.map {
     case r: RocketTile => r.module.core.rocketImpl.coreMonitorBundle
     case b: BoomTile => b.module.core.coreMonitorBundle
   }.toList
 
+  // No-tile configs have to be handled specially.
+  if (tiles.size == 0) {
+    // no PLIC, so sink interrupts to nowhere
+    require(!p(PLICKey).isDefined)
+    val intNexus = IntNexusNode(sourceFn = x => x.head, sinkFn = x => x.head)
+    val intSink = IntSinkNode(IntSinkPortSimple())
+    intSink := intNexus :=* ibus.toPLIC
+
+    // avoids a bug when there are no interrupt sources
+    ibus.fromAsync := NullIntSource()
+
+    // Need to have at least 1 driver to the tile notification sinks
+    tileHaltXbarNode := IntSourceNode(IntSourcePortSimple())
+    tileWFIXbarNode := IntSourceNode(IntSourcePortSimple())
+    tileCeaseXbarNode := IntSourceNode(IntSourcePortSimple())
+
+    // Sink reset vectors to nowhere
+    val resetVectorSink = BundleBridgeSink[UInt](Some(() => UInt(28.W)))
+    resetVectorSink := tileResetVectorNode
+  }
 
   // Relying on [[TLBusWrapperConnection]].driveClockFromMaster for
   // bus-couplings that are not asynchronous strips the bus name from the sink
@@ -79,10 +124,7 @@ class ChipyardSubsystem(implicit p: Parameters) extends BaseSubsystem
 class ChipyardSubsystemModuleImp[+L <: ChipyardSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer)
   with HasTilesModuleImp
 {
-  // create file with core params
-  ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))
   // Generate C header with relevant information for Dromajo
   // This is included in the `dromajo_params.h` header file
   DromajoHelper.addArtefacts(InSubsystem)
 }
-

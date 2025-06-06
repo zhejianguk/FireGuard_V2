@@ -8,7 +8,7 @@ import chisel3.util._
 import dspblocks._
 import dsptools.numbers._
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config.{Parameters, Field, Config}
+import org.chipsalliance.cde.config.{Parameters, Field, Config}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
@@ -16,8 +16,8 @@ import freechips.rocketchip.subsystem._
 // Simple passthrough to use as testbed sanity check
 // StreamingPassthrough params
 case class StreamingPassthroughParams(
-  writeAddress: BigInt = 0x2000,
-  readAddress: BigInt = 0x2100,
+  writeAddress: BigInt = 0x2200,
+  readAddress: BigInt = 0x2300,
   depth: Int
 )
 
@@ -132,7 +132,7 @@ trait CanHavePeripheryStreamingPassthrough { this: BaseSubsystem =>
   val passthrough = p(StreamingPassthroughKey) match {
     case Some(params) => {
       val streamingPassthroughChain = LazyModule(new TLStreamingPassthroughChain(params, UInt(32.W)))
-      pbus.toVariableWidthSlave(Some("streamingPassthrough")) { streamingPassthroughChain.mem.get := TLFIFOFixer() }
+      pbus.coupleTo("streamingPassthrough") { streamingPassthroughChain.mem.get := TLFIFOFixer() := TLFragmenter(pbus.beatBytes, pbus.blockBytes) := _ }
       Some(streamingPassthroughChain)
     }
     case None => None
@@ -145,4 +145,3 @@ trait CanHavePeripheryStreamingPassthrough { this: BaseSubsystem =>
 class WithStreamingPassthrough extends Config((site, here, up) => {
   case StreamingPassthroughKey => Some(StreamingPassthroughParams(depth = 8))
 })
-

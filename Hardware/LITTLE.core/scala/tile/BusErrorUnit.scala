@@ -6,10 +6,9 @@ import Chisel._
 import Chisel.ImplicitConversions._
 import chisel3.util.Valid
 import chisel3.DontCare
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{BusErrorLogicalTreeNode, LogicalModuleTree, LogicalTreeNode}
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
@@ -35,7 +34,7 @@ class L1BusErrors(implicit p: Parameters) extends CoreBundle()(p) with BusErrors
 
 case class BusErrorUnitParams(addr: BigInt, size: Int = 4096)
 
-class BusErrorUnit[T <: BusErrors](t: => T, params: BusErrorUnitParams, logicalTreeNode: LogicalTreeNode)(implicit p: Parameters) extends LazyModule {
+class BusErrorUnit[T <: BusErrors](t: => T, params: BusErrorUnitParams)(implicit p: Parameters) extends LazyModule {
   val regWidth = 64
   val device = new SimpleDevice("bus-error-unit", Seq("sifive,buserror0"))
   val intNode = IntSourceNode(IntSourcePortSimple(resources = device.int))
@@ -44,7 +43,8 @@ class BusErrorUnit[T <: BusErrors](t: => T, params: BusErrorUnitParams, logicalT
     device    = device,
     beatBytes = p(XLen)/8)
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     val io = IO(new Bundle {
       val errors = t.flip
       val interrupt = Bool().asOutput
@@ -130,8 +130,5 @@ class BusErrorUnit[T <: BusErrors](t: => T, params: BusErrorUnitParams, logicalT
       accrued(i) := false
       local_interrupt(i) := false
     }
-
-    val busErrorLTN = new BusErrorLogicalTreeNode(device, omRegMap)
-    LogicalModuleTree.add(logicalTreeNode, busErrorLTN)
   }
 }

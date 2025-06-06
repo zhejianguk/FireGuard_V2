@@ -15,7 +15,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.internal.sourceinfo.{SourceInfo}
 
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.rocket._
@@ -288,7 +288,6 @@ class BoomFrontendIO(implicit p: Parameters) extends BoomBundle
   val perf = Input(new FrontendPerfEvents)
 }
 
-
 //===== GuardianCouncil Function: Start ====//
 class BoomGHIO(implicit p: Parameters) extends BoomBundle
 {
@@ -326,7 +325,6 @@ class BoomFrontendBundle(val outer: BoomFrontend) extends CoreBundle()(outer.p)
   //===== GuardianCouncil Function: Start ====//
   val gh = new BoomGHIO()
   //===== GuardianCouncil Function: End ====//
-
 }
 
 /**
@@ -1004,7 +1002,7 @@ class BoomFrontendModule(outer: BoomFrontend) extends LazyModuleImp(outer)
   override def toString: String =
     (BoomCoreStringPrefix("====Overall Frontend Params====") + "\n"
     + icache.toString + bpd.toString)
-
+    
   //===== GuardianCouncil Function: Start ====//
   ftq.io.gh_redirect_pc                          := io.cpu.redirect_pc
 

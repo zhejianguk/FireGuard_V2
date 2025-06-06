@@ -5,11 +5,14 @@ package freechips.rocketchip.system // TODO this should really be in a testharne
 import chisel3._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.{CanHaveMasterAXI4MMIOPort, CanHaveMasterAXI4MemPort, ExtBus, ExtMem}
 
-/** Memory with AXI port for use in elaboratable test harnesses. */
+/** Memory with AXI port for use in elaboratable test harnesses.
+ * 
+ * Topology: AXIRAM <-< AXI4Buffer <-< AXI4Fragmenter <-< AXI4Xbar <-< AXI4MasterNode
+*/
 class SimAXIMem(edge: AXI4EdgeParameters, size: BigInt, base: BigInt = 0)(implicit p: Parameters) extends SimpleLazyModule {
   val node = AXI4MasterNode(List(edge.master))
   val srams = AddressSet.misaligned(base, size).map { aSet =>
@@ -24,6 +27,9 @@ class SimAXIMem(edge: AXI4EdgeParameters, size: BigInt, base: BigInt = 0)(implic
   val io_axi4 = InModuleBody { node.makeIOs() }
 }
 
+/**
+  * Connect Master AXI4 Mem/MMIO Port to SimAXIMem.
+  */
 object SimAXIMem {
   def connectMMIO(dut: CanHaveMasterAXI4MMIOPort)(implicit p: Parameters): Seq[SimAXIMem] = {
     dut.mmio_axi4.zip(dut.mmioAXI4Node.in).map { case (io, (_, edge)) =>
@@ -32,7 +38,7 @@ object SimAXIMem {
       Module(mmio_mem.module).suggestName("mmio_mem")
       mmio_mem.io_axi4.head <> io
       mmio_mem
-    }
+    }.toSeq
   }
 
   def connectMem(dut: CanHaveMasterAXI4MemPort)(implicit p: Parameters): Seq[SimAXIMem] = {
@@ -41,6 +47,6 @@ object SimAXIMem {
       Module(mem.module).suggestName("mem")
       mem.io_axi4.head <> io
       mem
-    }
+    }.toSeq
   }
 }

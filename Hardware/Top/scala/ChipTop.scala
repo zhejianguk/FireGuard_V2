@@ -6,7 +6,7 @@ import scala.collection.mutable.{ArrayBuffer}
 
 import freechips.rocketchip.prci.{ClockGroupIdentityNode, ClockSinkParameters, ClockSinkNode, ClockGroup}
 import freechips.rocketchip.subsystem.{BaseSubsystem, SubsystemDriveAsyncClockGroupsKey}
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, LazyRawModuleImp, LazyModuleImpLike, BindingScope}
 import freechips.rocketchip.util.{ResetCatchAndSync}
 import chipyard.iobinders._
@@ -33,4 +33,3 @@ class ChipTop(implicit p: Parameters) extends LazyModule with BindingScope
   // anyways, they probably need to be explicitly clocked.
   lazy val module: LazyModuleImpLike = new LazyRawModuleImp(this) {  }
 }
-

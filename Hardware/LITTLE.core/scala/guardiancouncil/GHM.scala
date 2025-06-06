@@ -4,7 +4,7 @@ package freechips.rocketchip.guardiancouncil
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{BaseModule}
-import freechips.rocketchip.config.{Field, Parameters}
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.subsystem.{BaseSubsystem, HierarchicalLocation, HasTiles, TLBusWrapperLocation}
 import freechips.rocketchip.diplomacy._
 //===== GuardianCouncil Function: Start ====//
@@ -49,7 +49,8 @@ trait HasGHMIO extends BaseModule {
 //==========================================================
 class GHM (val params: GHMParams)(implicit p: Parameters) extends LazyModule
 {
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     val io                                         = IO(new GHMIO(params))
 
     // Adding a register to avoid the critical path
@@ -79,25 +80,15 @@ class GHM (val params: GHMParams)(implicit p: Parameters) extends LazyModule
     var warning                                    = WireInit(0.U(1.W))
 
     val num_of_activated_cores                     = io.ghm_status_in(30, 23)
-    val ghe_event_reg                              = RegInit(VecInit(Seq.fill(params.number_of_little_cores)(0.U(3.W))))
+    val ghe_event_reg                              = RegInit(0.U(3.W))
     val ghe_event                                  = WireInit(0.U(3.W))
     val initalised                                 = WireInit(0.U(1.W))
 
-    ghe_event                                     := ghe_event_reg(num_of_activated_cores-1.U)
-    val u_and_gates                                = Seq.fill(params.number_of_little_cores) {Module(new GH_ANDGATE(ANDGATEParams (3, params.number_of_little_cores)))}
-
-    for (i <- 0 to params.number_of_little_cores - 1){
-      for (j <- 0 to params.number_of_little_cores - 1){
-        if (j > i){
-          u_and_gates(i).io.in(j)                  := 7.U // 3'b111
-        } else {
-          u_and_gates(i).io.in(j)                  := io.ghe_event_in(j)(3,1)
-        }
-      }
-      ghe_event_reg(i)                             := u_and_gates(i).io.out
-    }
+    ghe_event                                     := ghe_event_reg
+    // val u_and_gates                                = Seq.fill(params.number_of_little_cores) {Module(new GH_ANDGATE(ANDGATEParams (3, params.number_of_little_cores)))}
 
 
+    ghe_event_reg                                 := io.ghe_event_in.map{i=>i(3,1)}.reduce(_&_)
 
 
     val debug_gcounter                             = RegInit (0.U(64.W))

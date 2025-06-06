@@ -2,14 +2,11 @@
 
 package freechips.rocketchip.devices.tilelink
 
-import Chisel._
-import freechips.rocketchip.config.Parameters
+import chisel3._
+import chisel3.util._
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink.TLMessages
-
-import freechips.rocketchip.diplomaticobjectmodel.{DiplomaticObjectModelAddressing, HasLogicalTreeNode}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMZeroDevice, OMComponent}
 
 /** This /dev/null device accepts single beat gets/puts, as well as atomics.
   * Response data is always 0. Reequests to write data have no effect.
@@ -27,25 +24,9 @@ class TLZero(address: AddressSet, beatBytes: Int = 4)(implicit p: Parameters)
     minLatency = 1,
     beatBytes = beatBytes,
     device = new SimpleDevice("rom", Seq("ucbbar,cacheable-zero0")))
-    with HasLogicalTreeNode
 {
-
-  lazy val logicalTreeNode: LogicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil) = {
-      val Description(name, mapping) = device.describe(resourceBindings)
-      val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
-      val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
-      Seq(OMZeroDevice(
-        memoryRegions = memRegions.map(_.copy(
-          name = "zerodevice",
-          description = "Zero Device"
-        )),
-        interrupts = interrupts
-      ))
-    }
-  }
-
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     val (in, edge) = node.in(0)
 
     val a = Queue(in.a, 2)
@@ -56,8 +37,8 @@ class TLZero(address: AddressSet, beatBytes: Int = 4)(implicit p: Parameters)
     in.d.bits.opcode := TLMessages.adResponse(edge.opcode(a.bits))
 
     // Tie off unused channels
-    in.b.valid := Bool(false)
-    in.c.ready := Bool(true)
-    in.e.ready := Bool(true)
+    in.b.valid := false.B
+    in.c.ready := true.B
+    in.e.ready := true.B
   }
 }

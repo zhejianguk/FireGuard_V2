@@ -63,6 +63,3 @@ class GHT_FTABLE (val params: GHT_FTABLE_Params) extends Module with HasGHT_FTAB
   io.inst_index                                := Mux(mem_ren_reg === 1.U, Cat(zeros_3bits, mem_data(3,2)), 0.U)
   io.inst_sel_d                                := Mux(mem_ren_reg === 1.U, mem_data(1,0), 0.U)
 }
-  
-  
-  

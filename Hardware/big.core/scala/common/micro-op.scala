@@ -14,7 +14,7 @@ package boom.common
 import chisel3._
 import chisel3.util._
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 import boom.exu.FUConstants
 
@@ -165,7 +165,7 @@ class CtrlSignals extends Bundle()
   val op1_sel     = UInt(OP1_X.getWidth.W)
   val op2_sel     = UInt(OP2_X.getWidth.W)
   val imm_sel     = UInt(IS_X.getWidth.W)
-  val op_fcn      = UInt(freechips.rocketchip.rocket.ALU.SZ_ALU_FN.W)
+  val op_fcn      = UInt((new freechips.rocketchip.rocket.ALUFN).SZ_ALU_FN.W)
   val fcn_dw      = Bool()
   val csr_cmd     = UInt(freechips.rocketchip.rocket.CSR.SZ.W)
   val is_load     = Bool()   // will invoke TLB address lookup

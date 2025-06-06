@@ -4,10 +4,9 @@
 package freechips.rocketchip.tile
 
 import Chisel._
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{DCacheLogicalTreeNode, LogicalModuleTree, RocketLogicalTreeNode, UTLBLogicalTreeNode}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.rocket._
@@ -18,6 +17,7 @@ import freechips.rocketchip.prci.{ClockSinkParameters}
 import freechips.rocketchip.guardiancouncil._
 //===== GuardianCouncil Function: End   ====//
 
+case class RocketTileBoundaryBufferParams(force: Boolean = false)
 
 case class RocketTileParams(
     core: RocketCoreParams = RocketCoreParams(),
@@ -30,7 +30,7 @@ case class RocketTileParams(
     beuAddr: Option[BigInt] = None,
     blockerCtrlAddr: Option[BigInt] = None,
     clockSinkParams: ClockSinkParameters = ClockSinkParameters(),
-    boundaryBuffers: Boolean = false // if synthesized with hierarchical PnR, cut feed-throughs?
+    boundaryBuffers: Option[RocketTileBoundaryBufferParams] = None
     ) extends InstantiableTileParams[RocketTile] {
   require(icache.isDefined)
   require(dcache.isDefined)
@@ -59,15 +59,13 @@ class RocketTile private(
   val slaveNode = TLIdentityNode()
   val masterNode = visibilityNode
 
-  override val logicalTreeNode = new RocketLogicalTreeNode(this, p(XLen), pgLevels)
-
   val dtim_adapter = tileParams.dcache.flatMap { d => d.scratch.map { s =>
     LazyModule(new ScratchpadSlavePort(AddressSet.misaligned(s, d.dataScratchpadBytes), lazyCoreParamsView.coreDataBytes, tileParams.core.useAtomics && !tileParams.core.useAtomicsOnlyForIO))
   }}
   dtim_adapter.foreach(lm => connectTLSlave(lm.node, lm.node.portParams.head.beatBytes))
 
   val bus_error_unit = rocketParams.beuAddr map { a =>
-    val beu = LazyModule(new BusErrorUnit(new L1BusErrors, BusErrorUnitParams(a), logicalTreeNode))
+    val beu = LazyModule(new BusErrorUnit(new L1BusErrors, BusErrorUnitParams(a)))
     intOutwardNode := beu.intNode
     connectTLSlave(beu.node, xBytes)
     beu
@@ -110,27 +108,16 @@ class RocketTile private(
 
   override lazy val module = new RocketTileModuleImp(this)
 
-  override def makeMasterBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = crossing match {
-    case _: RationalCrossing =>
-      if (!rocketParams.boundaryBuffers) TLBuffer(BufferParams.none)
-      else TLBuffer(BufferParams.none, BufferParams.flow, BufferParams.none, BufferParams.flow, BufferParams(1))
+  override def makeMasterBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = (rocketParams.boundaryBuffers, crossing) match {
+    case (Some(RocketTileBoundaryBufferParams(true )), _)                   => TLBuffer()
+    case (Some(RocketTileBoundaryBufferParams(false)), _: RationalCrossing) => TLBuffer(BufferParams.none, BufferParams.flow, BufferParams.none, BufferParams.flow, BufferParams(1))
     case _ => TLBuffer(BufferParams.none)
   }
 
-  override def makeSlaveBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = crossing match {
-    case _: RationalCrossing =>
-      if (!rocketParams.boundaryBuffers) TLBuffer(BufferParams.none)
-      else TLBuffer(BufferParams.flow, BufferParams.none, BufferParams.none, BufferParams.none, BufferParams.none)
+  override def makeSlaveBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = (rocketParams.boundaryBuffers, crossing) match {
+    case (Some(RocketTileBoundaryBufferParams(true )), _)                   => TLBuffer()
+    case (Some(RocketTileBoundaryBufferParams(false)), _: RationalCrossing) => TLBuffer(BufferParams.flow, BufferParams.none, BufferParams.none, BufferParams.none, BufferParams.none)
     case _ => TLBuffer(BufferParams.none)
-  }
-
-  val dCacheLogicalTreeNode = new DCacheLogicalTreeNode(dcache, dtim_adapter.map(_.device), rocketParams.dcache.get)
-  LogicalModuleTree.add(logicalTreeNode, iCacheLogicalTreeNode)
-  LogicalModuleTree.add(logicalTreeNode, dCacheLogicalTreeNode)
-
-  if (rocketParams.core.useVM) {
-    val utlbLogicalTreeNode = new UTLBLogicalTreeNode(rocketParams.core, utlbOMSRAMs)
-    LogicalModuleTree.add(logicalTreeNode, utlbLogicalTreeNode)
   }
 }
 
@@ -181,7 +168,8 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
     ght.io.ght_cfg_valid := ght_cfg_v_bridge.io.out
     outer.ght_packet_out_SRNode.bundle := ght.io.ght_packet_out
     outer.ght_packet_dest_SRNode.bundle := ght.io.ght_packet_dest
-    core.io.clk_enable_gh := ~(outer.bigcore_hang_in_SKNode.bundle) 
+    // Temporarily disable clock gating for big core to avoid null pointer issue
+    core.io.clk_enable_gh := 1.U  // TODO: Connect to ~(outer.bigcore_hang_in_SKNode.bundle) when GHM is properly initialized
     outer.ghe_event_out_SRNode.bundle := ghe_bridge.io.out
     ght.io.core_na := outer.sch_na_inSKNode.bundle
     ght.io.new_commit := core.io.new_commit
@@ -214,8 +202,6 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
   }
     
   //===== GuardianCouncil Function: End ====//
-
-
 
   // Report unrecoverable error conditions; for now the only cause is cache ECC errors
   outer.reportHalt(List(outer.dcache.module.io.errors))
@@ -295,6 +281,7 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
     elu_deq_bridge.io.in := cmdRouter.get.io.elu_deq_out
     elu_sel_bridge.io.in := cmdRouter.get.io.elu_sel_out
     //===== GuardianCouncil Function: End   ====//
+    (core.io.rocc.csrs zip roccCSRIOs.flatten).foreach { t => t._2 := t._1 }
   }
 
   // Rocket has higher priority to DTIM than other TileLink clients
@@ -307,8 +294,8 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
   require(h == c, s"port list size was $h, core expected $c")
   require(h == o, s"port list size was $h, outer counted $o")
   // TODO figure out how to move the below into their respective mix-ins
-  dcacheArb.io.requestor <> dcachePorts
-  ptw.io.requestor <> ptwPorts
+  dcacheArb.io.requestor <> dcachePorts.toSeq
+  ptw.io.requestor <> ptwPorts.toSeq
 }
 
 trait HasFpuOpt { this: RocketTileModuleImp =>

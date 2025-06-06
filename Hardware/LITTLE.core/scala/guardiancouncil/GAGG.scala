@@ -4,7 +4,7 @@ package freechips.rocketchip.guardiancouncil
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{BaseModule}
-import freechips.rocketchip.config.{Field, Parameters}
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.subsystem.{BaseSubsystem, HierarchicalLocation, HasTiles, TLBusWrapperLocation}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.{ClockDivider2}
@@ -43,7 +43,8 @@ trait HasGAGGIO extends BaseModule {
 //==========================================================
 class GAGG (val params: GAGGParams)(implicit p: Parameters) extends LazyModule
 {
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     val io                                         = IO(new GAGGIO(params))
     val u_agg                                      = Module (new GHT_AGG(GHM_AGG_Params(params.number_of_little_cores, params.width_GH_packet)))
 

@@ -2,11 +2,10 @@
 
 package freechips.rocketchip.devices.tilelink
 
-import Chisel._
-import freechips.rocketchip.config.{Field, Parameters}
+import chisel3._
+import chisel3.util.ShiftRegister
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree._
-import freechips.rocketchip.diplomaticobjectmodel.model._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem._
@@ -58,20 +57,21 @@ class CLINT(params: CLINTParams, beatBytes: Int)(implicit p: Parameters) extends
     sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
     outputRequiresInput = false)
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     Annotated.params(this, params)
     require (intnode.edges.in.size == 0, "CLINT only produces interrupts; it does not accept them")
 
     val io = IO(new Bundle {
-      val rtcTick = Bool(INPUT)
+      val rtcTick = Input(Bool())
     })
 
-    val time = RegInit(UInt(0, width = timeWidth))
-    when (io.rtcTick) { time := time + UInt(1) }
+    val time = RegInit(0.U(timeWidth.W))
+    when (io.rtcTick) { time := time + 1.U }
 
     val nTiles = intnode.out.size
-    val timecmp = Seq.fill(nTiles) { Reg(UInt(width = timeWidth)) }
-    val ipi = Seq.fill(nTiles) { RegInit(UInt(0, width = 1)) }
+    val timecmp = Seq.fill(nTiles) { Reg(UInt(timeWidth.W)) }
+    val ipi = Seq.fill(nTiles) { RegInit(0.U(1.W)) }
 
     val (intnode_out, _) = intnode.out.unzip
     intnode_out.zipWithIndex.foreach { case (int, i) =>
@@ -89,7 +89,7 @@ class CLINT(params: CLINTParams, beatBytes: Int)(implicit p: Parameters) extends
      * bffc mtime hi
      */
 
-    val omRegMap : OMRegisterMap = node.regmap(
+    node.regmap(
       0                -> RegFieldGroup ("msip", Some("MSIP Bits"), ipi.zipWithIndex.flatMap{ case (r, i) =>
         RegField(1, r, RegFieldDesc(s"msip_$i", s"MSIP bit for Hart $i", reset=Some(0))) :: RegField(ipiWidth - 1) :: Nil }),
       timecmpOffset(0) -> timecmp.zipWithIndex.flatMap{ case (t, i) => RegFieldGroup(s"mtimecmp_$i", Some(s"MTIMECMP for hart $i"),
@@ -98,8 +98,6 @@ class CLINT(params: CLINTParams, beatBytes: Int)(implicit p: Parameters) extends
         RegField.bytes(time, Some(RegFieldDesc("mtime", "", reset=Some(0), volatile=true))))
     )
   }
-
-  def logicalTreeNode: CLINTLogicalTreeNode = new CLINTLogicalTreeNode(device, module.omRegMap)
 }
 
 /** Trait that will connect a CLINT to a subsystem */
@@ -107,7 +105,6 @@ trait CanHavePeripheryCLINT { this: BaseSubsystem =>
   val clintOpt = p(CLINTKey).map { params =>
     val tlbus = locateTLBusWrapper(p(CLINTAttachKey).slaveWhere)
     val clint = LazyModule(new CLINT(params, cbus.beatBytes))
-    LogicalModuleTree.add(logicalTreeNode, clint.logicalTreeNode)
     clint.node := tlbus.coupleTo("clint") { TLFragmenter(tlbus) := _ }
 
     // Override the implicit clock and reset -- could instead include a clockNode in the clint, and make it a RawModuleImp?

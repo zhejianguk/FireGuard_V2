@@ -2,10 +2,11 @@
 
 package freechips.rocketchip.regmapper
 
-import Chisel.Data
+import chisel3._
 import chisel3.util.{isPow2}
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.util.EnhancedChisel3Assign
 
 /** Parameters which apply to any RegisterRouter. */
 case class RegisterRouterParams(

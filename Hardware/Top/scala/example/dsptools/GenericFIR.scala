@@ -8,7 +8,7 @@ import chisel3.util._
 import dspblocks._
 import dsptools.numbers._
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config.{Parameters, Field, Config}
+import org.chipsalliance.cde.config.{Parameters, Field, Config}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
@@ -203,7 +203,7 @@ trait CanHavePeripheryStreamingFIR extends BaseSubsystem {
         genOut = FixedPoint(8.W, 3.BP),
         coeffs = Seq(1.F(0.BP), 2.F(0.BP), 3.F(0.BP)),
         params = params))
-      pbus.toVariableWidthSlave(Some("streamingFIR")) { streamingFIR.mem.get := TLFIFOFixer() }
+      pbus.coupleTo("streamingFIR") { streamingFIR.mem.get := TLFIFOFixer() := TLFragmenter(pbus.beatBytes, pbus.blockBytes) := _ }
       Some(streamingFIR)
     }
     case None => None

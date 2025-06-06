@@ -5,7 +5,7 @@ package freechips.rocketchip.devices.debug.systembusaccess
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.amba._
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -266,7 +266,8 @@ class SBToTL(implicit p: Parameters) extends LazyModule {
     clients = Seq(TLMasterParameters.v1("debug")),
     requestFields = Seq(AMBAProtField()))))
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     val io = IO(new Bundle {
       val rdEn         = Input(Bool())
       val wrEn         = Input(Bool())
