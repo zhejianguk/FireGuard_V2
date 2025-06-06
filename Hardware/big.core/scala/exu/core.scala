@@ -98,6 +98,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
     val i_counter = Output(UInt(64.W))
     val g_counter = Output(UInt(64.W)) // Global cycle counter
     val reset_counters = Input(UInt(1.W))
+    val use_frontend_analysis_mode =Input(UInt(1.W))
     val clear_ic_status_tomain = Input(UInt(GH_GlobalParams.GH_NUM_CORES.W))
     val icsl_na = Input(UInt(GH_GlobalParams.GH_NUM_CORES.W))
     //===== GuardianCouncil Function: End ====//
@@ -1619,7 +1620,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
     i_counter_reg                                 := 0.U
   } .otherwise {
     val num_committed = PopCount(rob.io.commit.arch_valids)
-    i_counter_reg                                 := Mux(io.if_correct_process.asBool, i_counter_reg + num_committed, i_counter_reg)
+    i_counter_reg                                 := Mux(io.if_correct_process.asBool && io.use_frontend_analysis_mode.asBool, i_counter_reg + num_committed, i_counter_reg)
   }
   io.i_counter                                    := i_counter_reg
 
@@ -1627,7 +1628,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
   when (io.reset_counters === 1.U) {
     g_counter_reg                                 := 0.U
   } .otherwise {
-    g_counter_reg                                 := Mux(io.if_correct_process.asBool, g_counter_reg + 1.U, g_counter_reg)
+    g_counter_reg                                 := Mux(io.if_correct_process.asBool && io.use_frontend_analysis_mode.asBool, g_counter_reg + 1.U, g_counter_reg)
   }
   io.g_counter                                    := g_counter_reg
   //===== GuardianCouncil Function: End ====//

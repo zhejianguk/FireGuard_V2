@@ -180,7 +180,7 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
   val icctrl_bridge = Module(new GH_Bridge(GH_BridgeParams(4)))
   val t_value_bridge = Module(new GH_Bridge(GH_BridgeParams(15)))
   val s_or_r = Reg(UInt(1.W))
-  val frontend_analysis = Reg(UInt(1.W))
+  val frontend_analysis = Wire(UInt(1.W))
   val fi_sel = Wire(UInt(8.W))
   val fi_latency = Wire(UInt(57.W))
 
@@ -334,6 +334,7 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
     core.io.t_value                              := t_value_bridge.io.out
     core.io.ght_filters_ready                    := ght.io.ght_filters_ready
     core.io.if_correct_process                   := if_correct_process_bridge.io.out
+    core.io.use_frontend_analysis_mode           := frontend_analysis
     for (w <- 0 until gc_core_width){
       ght.io.core_r_arfs(w)                      := core.io.r_arfs(w)
       ght.io.core_r_arfs_index(w)                := core.io.r_arfs_pidx(w)
