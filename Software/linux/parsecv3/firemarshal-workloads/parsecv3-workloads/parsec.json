@@ -1,0 +1,16 @@
+{
+    "name" : "parsec",
+    "base" : "br-base.json",
+    "overlay" : "overlay",
+    "host-init" : "host-init.sh",
+    "guest-init" : "guest-init.sh",
+    "outputs" : [ "/root" ],
+    "rootfs-size": "600M",
+    "jobs" : [
+      {
+        "name" : "all",
+        "command" : "cd /root && ./hello.sh && poweroff -f"
+      }
+    ]
+  }
+  
