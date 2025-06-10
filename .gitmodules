@@ -1,0 +1,3 @@
+[submodule "Software/linux/parsecv3/parsecv3-benchmark/parsec-benchmark"]
+	path = Software/linux/parsecv3/parsecv3-benchmark/parsec-benchmark
+	url = git@github.com:zhejianguk/parsec_gc.git
