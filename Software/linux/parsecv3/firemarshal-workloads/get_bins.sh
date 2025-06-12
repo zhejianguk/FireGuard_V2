@@ -5,7 +5,7 @@
 
 # Define source and destination paths (relative to script location)
 SOURCE_DIR="../parsec-benchmark/pkgs"
-DEST_DIR="parsecv3-workloads/parsec/overlay/root/pkgs"
+DEST_DIR="./parsecv3-workloads/parsec/overlay/root/pkgs"
 
 echo "Copying pkgs directory..."
 echo "Source: $SOURCE_DIR"
@@ -61,14 +61,7 @@ fi
 
 echo "Copy operation completed successfully!"
 
-# Create symbolic link for simplify_parsec.sh script to access pkgs
-echo "Creating symbolic link for pkgs directory..."
-ln -sf "$DEST_DIR" pkgs
-if [ $? -eq 0 ]; then
-    echo "Successfully created symbolic link: pkgs -> $DEST_DIR"
-else
-    echo "Warning: Failed to create symbolic link for pkgs directory"
-fi
+# Note: simplify_parsec.sh now uses relative paths, so no symbolic link needed
 
 # Run simplify_parsec.sh script after successful copy
 SIMPLIFY_SCRIPT="parsecv3-workloads/parsec/overlay/root/simplify_parsec.sh"

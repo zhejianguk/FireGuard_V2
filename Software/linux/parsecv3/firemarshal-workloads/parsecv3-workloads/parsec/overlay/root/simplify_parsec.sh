@@ -17,7 +17,9 @@ arch=amd64-linux # Revist: currently is the arch of the host machine
 BENCHMARKS=(blackscholes bodytrack dedup facesim ferret fluidanimate freqmine streamcluster swaptions x264)
 LIBS=(glib gsl hooks libjpeg libxml2 mesa parmacs ssl tbblib uptcpip zlib)
 
-base_dir=$PWD/pkgs
+# Get the directory where this script is located
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+base_dir=${script_dir}/pkgs
 
 cd ${base_dir}/apps
 rm -rf raytrace 
