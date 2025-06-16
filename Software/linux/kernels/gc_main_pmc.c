@@ -26,9 +26,15 @@ void* thread_pmc_gc(void* args){
 	uint64_t base = 0;
 	uint64_t end = 0x10000000000L;
 	uint64_t perfc = 0;
-	uint64_t header1 = 0;
-	uint64_t header2 = 0;
 	uint64_t addr;
+	uint64_t addr1;
+	uint64_t addr2;
+	uint64_t addr3;
+	uint64_t addr4;
+	uint64_t addr5;
+	uint64_t addr6;
+	uint64_t addr7;
+	uint64_t addr8;
 
 
 	if (gc_pthread_setaffinity(hart_id) != 0){
@@ -41,48 +47,41 @@ void* thread_pmc_gc(void* args){
 	//===================== Execution =====================//
 	while (ghe_checkght_status() != 0x02){
 		uint32_t buffer_depth = ghe_get_bufferdepth();
-		while (buffer_depth != 0){
-		uint32_t loop = (buffer_depth + 7) >> 3;
-		uint32_t loop_offset = buffer_depth & 0x07;
-		while (loop > 0) {
-			switch (loop_offset){
-			case 0:
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 7: 
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 6: 
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 5: 
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 4: 
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 3: 
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 2: 
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			case 1: 
+		while (buffer_depth > 7) {
 			ROCC_INSTRUCTION (1, 0x0D);
-			ROCC_INSTRUCTION_D (1, addr, 0x0D);
-			perfc += (addr > base && addr < end) ? 1 : 0;
-			}
-			loop--;
-			loop_offset = 0x0;
+			ROCC_INSTRUCTION (1, 0x0D);
+			ROCC_INSTRUCTION (1, 0x0D);
+			ROCC_INSTRUCTION (1, 0x0D);
+			ROCC_INSTRUCTION (1, 0x0D);
+			ROCC_INSTRUCTION (1, 0x0D);
+			ROCC_INSTRUCTION (1, 0x0D);
+			ROCC_INSTRUCTION (1, 0x0D);
+			perfc = perfc + 8;
+			buffer_depth = ghe_get_bufferdepth();
 		}
-		buffer_depth = ghe_get_bufferdepth();
+
+		if (buffer_depth > 0) {
+			switch (buffer_depth){
+				case 7: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				case 6: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				case 5: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				case 4: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				case 3: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				case 2: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				case 1: 
+				ROCC_INSTRUCTION (1, 0x0D);
+				perfc = perfc + buffer_depth;
+			}
+			buffer_depth = 0;
 		}
 	}
 	//=================== Post execution ===================//
-	if (hart_id == 0){
-		printf("[Rocket-C%x-PMC]: Completed, PMC = %lx! \r\n", hart_id, perfc);
-	}
-
 	ghe_deinitailised();
 	ghe_release();
 
@@ -135,6 +134,7 @@ void gcCleanup (void)
 
 	printf("[Detection latency (unit: cycles)] \r\n");
 
+	/*
 	for (int j = 0; j < 0x40; j++) {
      uint64_t latency = ght_readFIU(j);
      printf("%d \r\n", latency);
@@ -143,6 +143,7 @@ void gcCleanup (void)
 	if (GC_DEBUG == 1){
 		printf("[Boom-%x]: Test is now completed: \r\n", BOOM_ID);
 	}
+	*/
 
 	ght_unset_satp_priv();
 	ght_set_status_00 ();

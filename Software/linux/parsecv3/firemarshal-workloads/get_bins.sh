@@ -61,8 +61,6 @@ fi
 
 echo "Copy operation completed successfully!"
 
-# Note: simplify_parsec.sh now uses relative paths, so no symbolic link needed
-
 # Run simplify_parsec.sh script after successful copy
 SIMPLIFY_SCRIPT="parsecv3-workloads/parsec/overlay/root/simplify_parsec.sh"
 echo "Running simplify_parsec.sh script..."

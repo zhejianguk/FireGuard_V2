@@ -5,7 +5,13 @@
 #define GHE_EMPTY 0x01
 
 
-/*
+static inline uint64_t debug_mcounter ()
+{
+  uint64_t mcounter;
+  ROCC_INSTRUCTION_D (1, mcounter, 0x19);
+  return mcounter;
+}
+
 static inline uint64_t debug_icounter ()
 {
   uint64_t icounter;
@@ -19,14 +25,6 @@ static inline uint64_t debug_gcounter ()
   ROCC_INSTRUCTION_D (1, gcounter, 0x23);
   return gcounter;
 }
-
-static inline uint64_t debug_mcounter ()
-{
-  uint64_t mcounter;
-  ROCC_INSTRUCTION_D (1, mcounter, 0x19);
-  return mcounter;
-}
-*/
 
 static inline uint64_t ghe_status ()
 {

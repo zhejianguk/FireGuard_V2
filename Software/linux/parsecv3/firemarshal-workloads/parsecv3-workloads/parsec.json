@@ -9,7 +9,7 @@
     "jobs" : [
       {
         "name" : "all",
-        "command" : "cd /root/pkgs && ./run_parsec.sh && poweroff -f"
+        "command" : "cd /root/pkgs && ./run_parsec.sh -k perf && poweroff -f"
       }
     ]
   }

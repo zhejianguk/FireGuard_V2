@@ -770,7 +770,10 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
   rob.io.enq_partial_stall := dis_stalls.last // TODO come up with better ROB compacting scheme.
   rob.io.debug_tsc := debug_tsc_reg
   rob.io.csr_stall := csr.io.csr_stall
-  rob.io.gh_stall  := (io.gh_stall) & (~r_exception_record) & (io.if_correct_process)
+  val if_next_is_eret = (rob.io.r_next_inst === 0x30200073.U) || (rob.io.r_next_inst === 0x10200073.U)
+  val if_next_is_ecall = (rob.io.r_next_inst === 0x00000073.U)
+  val if_next_is_wfi = (rob.io.r_next_inst === 0x10500073.U)
+  rob.io.gh_stall  := (io.gh_stall) & (~r_exception_record) & (io.if_correct_process) & (!(if_next_is_ecall || if_next_is_eret || if_next_is_wfi)).asUInt
 
   // Minor hack: ecall and breaks need to increment the FTQ deq ptr earlier than commit, since
   // they write their PC into the CSR the cycle before they commit.
@@ -1568,7 +1571,7 @@ class BoomCore()(implicit p: Parameters) extends BoomModule
     io.is_rvc(w)                                 := rob.io.commit.uops(w).is_rvc
     io.alu_out(w)                                := rob.io.commit.gh_effective_alu_out(w);
   }
-  io.ght_prv                                     := csr.io.status.prv
+  io.ght_prv                                     := RegNext(csr.io.status.prv)
 
   val zero_2bits                                  = WireInit(0.U(2.W))
   val arch_valids_extended                        = Wire(Vec(coreWidth, UInt(3.W)))

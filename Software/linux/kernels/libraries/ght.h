@@ -140,12 +140,13 @@ static inline void ght_cfg_filter (uint64_t index, uint64_t func, uint64_t opcod
   ROCC_INSTRUCTION_SS (1, set_ref, 0X02, 0x06);
 }
 
-static inline void ght_cfg_filter_rvc (uint64_t index, uint64_t func, uint64_t opcode, uint64_t sel_d)
+static inline void ght_cfg_filter_rvc (uint64_t index, uint64_t func, uint64_t opcode, uint64_t msb, uint64_t sel_d)
 {
   uint64_t set_ref;
-  set_ref = ((index & 0x1f)<<4) | ((sel_d & 0xf)<<17) | ((opcode & 0x7f)<<21) | (((func|0x08) & 0xf)<<28) | 0x02;
+  set_ref = ((index & 0x1f)<<4) | ((sel_d & 0xf)<<17) | (((opcode|((msb&1)<<2)) & 0x7f)<<21) | (((func|0x8) & 0xf)<<28) | 0x02;
   ROCC_INSTRUCTION_SS (1, set_ref, 0X02, 0x06);
 }
+
 
 
 static inline void ght_cfg_se (uint64_t se_id, uint64_t end_id, uint64_t policy, uint64_t start_id)

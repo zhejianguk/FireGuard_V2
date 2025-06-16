@@ -15,6 +15,9 @@ initialisation_none: initialisation_none.c
 initialisation_pmc: initialisation_pmc.c
 	${CC} ${CFLAGS} -o initialisation_pmc.riscv initialisation_pmc.c -lpthread
 
+initialisation_perf: initialisation_perf.c
+	${CC} ${CFLAGS} -o initialisation_perf.riscv initialisation_perf.c -lpthread
+
 initialisation_sanitiser: initialisation_sanitiser.c
 	${CC} ${CFLAGS} -o initialisation_sanitiser.riscv initialisation_sanitiser.c -lpthread
 
@@ -37,6 +40,9 @@ gc_main_none: gc_main_none.c
 
 gc_main_pmc: gc_main_pmc.c
 	${CC} ${CFLAGS_CM} -c gc_main_pmc.c -lpthread
+
+gc_main_perf: gc_main_perf.c
+	${CC} ${CFLAGS_CM} -c gc_main_perf.c -lpthread
 
 gc_main_sanitiser: gc_main_sanitiser.c
 	${CC} ${CFLAGS_CM} -c gc_main_sanitiser.c -lpthread

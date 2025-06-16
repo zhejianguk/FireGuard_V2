@@ -243,15 +243,15 @@ class WithNMegaBooms(n: Int = 1, overrideIdOffset: Option[Int] = None) extends C
               numStqEntries = 32,
               maxBrCount = 20,
               numFetchBufferEntries = 24,
-              enablePrefetching = true,
+              // enablePrefetching = true,
               ftq = FtqParameters(nEntries=40),
               fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency=4, dfmaLatency=4, divSqrt=true))
             ),
             dcache = Some(
-              DCacheParams(rowBits = 128, nSets=64, nWays=8, nMSHRs=8, nTLBWays=32)
+              DCacheParams(rowBits = site(SystemBusKey).beatBits, nSets=64, nWays=8, nMSHRs=4, nTLBWays=32)
             ),
             icache = Some(
-              ICacheParams(rowBits = 128, nSets=64, nWays=8, fetchBytes=4*4)
+              ICacheParams(rowBits = site(SystemBusKey).beatBits, nSets=64, nWays=8, fetchBytes=4*4)
             ),
             hartId = i + idOffset
           ),

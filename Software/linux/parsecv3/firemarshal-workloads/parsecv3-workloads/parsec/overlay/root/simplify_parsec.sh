@@ -74,7 +74,7 @@ rm -rf netapps
 rm -rf tools
 
 cd ${base_dir}
-rm build_parsec.sh
+rm build_parsec_r.sh
 
 echo ""
 echo "All Done!"

@@ -76,7 +76,7 @@ class GHT_FILTERS_PRFS (val params: GHT_FILTERS_PRFS_Params) extends Module with
     Module(new GHT_FILTER_PRFS(GHT_FILTER_PRFS_Params(params.xlen, params.packet_size, params.use_prfs, id)))
   }
   
-  val u_buffer                                  = Seq.fill(params.core_width) {Module(new GH_FIFO(FIFOParams (buffer_width, 9)))}
+  val u_buffer                                  = Seq.fill(params.core_width) {Module(new GH_FIFO(FIFOParams (buffer_width, 32)))}
   val core_hang_up                              = u_buffer(params.core_width-1).io.status_threeslots
 
   // Connecting filters
