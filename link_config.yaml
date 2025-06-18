@@ -13,7 +13,7 @@ firesim:
   # Define multiple destination bases
   destinations:
     main: "/home/zhejiang/firesim/target-design/chipyard"
-    firemarshal: "/home/zhejiang/firesim/sw/firesim-software"
+    firemarshal: "/home/zhejiang/firesim/sw/FireMarshal"
   
   links:
     "Hardware/big.core/scala": "main:generators/boom/src/main/scala"
