@@ -20,7 +20,7 @@ void gcCleanup (void) __attribute__ ((destructor));
 
 pthread_t threads[NUM_CORES-1];
 char* shadow;
-uint64_t map_size = (long long) 4*1024*1024*1024*sizeof(char);
+uint64_t map_size = (long long) 4*1024*1024*sizeof(char);
 
 void report_error(uint64_t offset){
 	int PC;
@@ -52,7 +52,7 @@ void* thread_sanitiser_gc(void* args){
 		printf ("[Rocket-C%x-Sani]: pthread_setaffinity failed.", hart_id);
 	}
 	
-	asm volatile("fence rw, rw;");
+	// asm volatile("fence rw, rw;");
 	ghe_go();
 	ghe_initailised();
 
@@ -63,75 +63,75 @@ void* thread_sanitiser_gc(void* args){
 		while (buffer_depth > 9){
 			ROCC_INSTRUCTION_D (1, Address1, 0x0D);
 			ROCC_INSTRUCTION_D (1, Address2, 0x0D);
-			bits1 = shadow[(Address1)>>7];
+			bits1 = shadow[(Address1)>>17];
 			if (bits1 != 0){
-				if(bits1 & (1<<((Address1 >> 7)&8))) {
+				if(bits1 & (1<<((Address1 >> 17)&8))) {
 					report_error(1);
 				}
 			}
-			bits2 = shadow[(Address2)>>7];
+			bits2 = shadow[(Address2)>>17];
 			if (bits2 != 0){
-				if(bits2 & (1<<((Address2 >> 7)&8))) {
+				if(bits2 & (1<<((Address2 >> 17)&8))) {
 					report_error(0);
 				}
 			}
 
 			ROCC_INSTRUCTION_D (1, Address1, 0x0D);
 			ROCC_INSTRUCTION_D (1, Address2, 0x0D);
-			bits1 = shadow[(Address1)>>7];
+			bits1 = shadow[(Address1)>>17];
 			if (bits1 != 0){
-				if(bits1 & (1<<((Address1 >> 7)&8))) {
+				if(bits1 & (1<<((Address1 >> 17)&8))) {
 					report_error(1);
 				}
 			}
-			bits2 = shadow[(Address2)>>7];
+			bits2 = shadow[(Address2)>>17];
 			if (bits2 != 0){
-				if(bits2 & (1<<((Address2 >> 7)&8))) {
+				if(bits2 & (1<<((Address2 >> 17)&8))) {
 					report_error(0);
 				}
 			}
 
 			ROCC_INSTRUCTION_D (1, Address1, 0x0D);
 			ROCC_INSTRUCTION_D (1, Address2, 0x0D);
-			bits1 = shadow[(Address1)>>7];
+			bits1 = shadow[(Address1)>>17];
 			if (bits1 != 0){
-				if(bits1 & (1<<((Address1 >> 7)&8))) {
+				if(bits1 & (1<<((Address1 >> 17)&8))) {
 					report_error(1);
 				}
 			}
-			bits2 = shadow[(Address2)>>7];
+			bits2 = shadow[(Address2)>>17];
 			if (bits2 != 0){
-				if(bits2 & (1<<((Address2 >> 7)&8))) {
+				if(bits2 & (1<<((Address2 >> 17)&8))) {
 					report_error(0);
 				}
 			}
 			
 			ROCC_INSTRUCTION_D (1, Address1, 0x0D);
 			ROCC_INSTRUCTION_D (1, Address2, 0x0D);
-			bits1 = shadow[(Address1)>>7];
+			bits1 = shadow[(Address1)>>17];
 			if (bits1 != 0){
-				if(bits1 & (1<<((Address1 >> 7)&8))) {
+				if(bits1 & (1<<((Address1 >> 17)&8))) {
 					report_error(1);
 				}
 			}
-			bits2 = shadow[(Address2)>>7];
+			bits2 = shadow[(Address2)>>17];
 			if (bits2 != 0){
-				if(bits2 & (1<<((Address2 >> 7)&8))) {
+				if(bits2 & (1<<((Address2 >> 17)&8))) {
 					report_error(0);
 				}
 			}
 			
 			ROCC_INSTRUCTION_D (1, Address1, 0x0D);
 			ROCC_INSTRUCTION_D (1, Address2, 0x0D);
-			bits1 = shadow[(Address1)>>7];
+			bits1 = shadow[(Address1)>>17];
 			if (bits1 != 0){
-				if(bits1 & (1<<((Address1 >> 7)&8))) {
+				if(bits1 & (1<<((Address1 >> 17)&8))) {
 					report_error(1);
 				}
 			}
-			bits2 = shadow[(Address2)>>7];
+			bits2 = shadow[(Address2)>>17];
 			if (bits2 != 0){
-				if(bits2 & (1<<((Address2 >> 7)&8))) {
+				if(bits2 & (1<<((Address2 >> 17)&8))) {
 					report_error(0);
 				}
 			}
@@ -142,81 +142,81 @@ void* thread_sanitiser_gc(void* args){
 			switch (buffer_depth){
 				case 9:
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 8:
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 7:
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 6: 
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 5: 
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 4: 
 					ROCC_INSTRUCTION_D (1, Address, 0x0D);
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 3: 
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 2: 
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
 
 				case 1: 
 					ROCC_INSTRUCTION_D (1, Address, 0x0D); 
-					bits = shadow[(Address)>>7];
+					bits = shadow[(Address)>> 17];
 					if (bits != 0){
-						if(bits & (1<<((Address >> 7)&8))) {
+						if(bits & (1<<((Address >> 17)&8))) {
 							report_error(0);
 						}
 					}
@@ -227,17 +227,9 @@ void* thread_sanitiser_gc(void* args){
 					exit(0);
 			}
 		}
-
-		// Dedicated for shadowstack
-		if (ghe_checkght_status() == 0x04) {
-			ghe_complete();
-			while(ghe_checkght_status() == 0x04) {
-				ghe_complete();
-			}
-			ghe_go();
-		}
 	}
 
+	printf("[Rocket-C-%x]: Check completed. \r\n", hart_id);
 	//=================== Post execution ===================//
 	ghe_deinitailised();
 	ghe_release();
@@ -265,8 +257,12 @@ void gcStartup (void)
 	
 	asm volatile("fence rw, rw;");
 
-	if(shadow == NULL) {
-		printf("[BOOM-C%x]: Error! memory is not allocated.", BOOM_ID);
+	if(shadow == MAP_FAILED) {
+		perror("[BOOM-C]: Error mapping shadow memory");
+		printf("[BOOM-C%x]: Failed to allocate shadow memory\n", BOOM_ID);
+		exit(1);
+	} else {
+		printf("[BOOM-C%x]: Shadow memory successfully allocated (%lu bytes)\n", BOOM_ID, map_size);
 	}
 	// GC threads
     for (uint64_t i = 0; i < NUM_CORES - 1; i++) {
@@ -276,10 +272,10 @@ void gcStartup (void)
 	while (ght_get_initialisation() == 0){
  	}
 
-	printf("[Boom-C-%x]: Test is now started: \r\n", BOOM_ID);
-	printf("[Boom-C-%x]: Idle for checkers being intialised... \r\n", BOOM_ID);
-	printf("[Boom-C-%x]: Idle for checkers being intialised... \r\n", BOOM_ID);
-	printf("[Boom-C-%x]: Idle for checkers being intialised... \r\n", BOOM_ID);
+	printf("[Boom-C%x]: Test is now started: \r\n", BOOM_ID);
+	printf("[Boom-C%x]: Idle for checkers being intialised... \r\n", BOOM_ID);
+	printf("[Boom-C%x]: Idle for checkers being intialised... \r\n", BOOM_ID);
+	printf("[Boom-C%x]: Idle for checkers being intialised... \r\n", BOOM_ID);
 
 	ROCC_INSTRUCTION_S (1, 0x02, 0x01); // Enabling FI
   	ROCC_INSTRUCTION (1, 0x67); // Reset FI
@@ -297,6 +293,7 @@ void gcCleanup (void)
     ght_set_status_02 ();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
+	printf("[BOOM-C-%x]: Workload Executed ^.^ \r\n", BOOM_ID);
     // GC threads.
 	for (uint64_t i = 0; i < NUM_CORES-1; i++) {
 		pthread_join(threads[i], NULL);
@@ -335,10 +332,8 @@ void gcCleanup (void)
 	if(s != 0) {
 		printf("[BOOM-C%x]: Error! memory is not allocated.", BOOM_ID);
 	}
-
-	if (GC_DEBUG == 1){
-		printf("[BOOM-C-%x]: Test is now completed! \r\n", BOOM_ID);
-	}
+	
+	printf("[BOOM-C-%x]: Test is now completed! \r\n", BOOM_ID);
 
 	ght_unset_satp_priv();
 	ght_set_status_00 ();

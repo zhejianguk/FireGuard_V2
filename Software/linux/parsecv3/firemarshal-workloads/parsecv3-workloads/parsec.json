@@ -1,16 +1,17 @@
 {
-    "name" : "parsec",
-    "base" : "br-base.json",
-    "overlay" : "overlay",
-    "host-init" : "host-init.sh",
-    "guest-init" : "guest-init.sh",
-    "outputs" : [ "/root" ],
-    "rootfs-size": "600M",
-    "jobs" : [
-      {
-        "name" : "all",
-        "command" : "cd /root/pkgs && ./run_parsec.sh -k perf && poweroff -f"
-      }
+    "name": "parsec",
+    "base": "br-base.json",
+    "overlay": "overlay",
+    "host-init": "host-init.sh",
+    "guest-init": "guest-init.sh",
+    "outputs": [
+        "/root"
+    ],
+    "rootfs-size": "500M",
+    "jobs": [
+        {
+            "name": "all",
+            "command": "cd /root/pkgs && ./run_parsec.sh -k sanitiser -b dedup && poweroff -f"
+        }
     ]
-  }
-  
+}

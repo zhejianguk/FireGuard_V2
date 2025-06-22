@@ -1483,19 +1483,22 @@ extern int uart_lock;
 int debug = 0;
 
 #define GCKERNEL 1
-#define GCKERNEL_Sani 1
+#define GCKERNEL_Sani 0
 
 void poison(void* start, size_t bytes) {
 if (GCKERNEL_Sani == 1) {
   if (ght_get_initialisation() == 1) {
     ght_set_status_04 (); // ght: pause
-    // char* str1 = "A";
-    // write(STDOUT_FILENO, str1, strlen(str1));
+    char* str1 = "A";
+    write(STDOUT_FILENO, str1, strlen(str1));
 
     while (ght_get_status() < 0xFFFF) {
       //drain_checkers();
       ght_set_status_04 (); // ght: pause
     }
+    char* str2 = "B";
+    write(STDOUT_FILENO, str2, strlen(str2));
+
     ght_set_status_00 (); // ght: run, but no filtering
 
     char* start_s = &shadow[((long)start)>>7];
@@ -1522,10 +1525,14 @@ if (GCKERNEL_Sani == 1) {
     while (ght_get_status() > 0xFFFF) {
       ght_set_status_00 ();
     }
+
+    char* str3 = "C";
+    write(STDOUT_FILENO, str3, strlen(str3));
+
     // asm volatile("fence rw, rw;");
     ght_set_status_01 ();
   }
-}
+  }
 }
 
 
@@ -1535,12 +1542,16 @@ if (GCKERNEL_Sani == 1) {
   if (ght_get_initialisation() == 1) {
     ght_set_status_04 (); // ght: pause
 
-    // char* str3 = "B";
-    // write(STDOUT_FILENO, str3, strlen(str3));
+    char* str4 = "D";
+    write(STDOUT_FILENO, str4, strlen(str4));
     
     while (ght_get_status() < 0xFFFF) {
       ght_set_status_04 (); // ght: pause
     }
+
+    char* str5 = "E";
+    write(STDOUT_FILENO, str5, strlen(str5));
+
     ght_set_status_00 (); // ght: run, but no filtering
 
     char* start_s = &shadow[((long)start)>>7];
@@ -1567,6 +1578,8 @@ if (GCKERNEL_Sani == 1) {
     while (ght_get_status() > 0xFFFF) {
       ght_set_status_00 ();
     }
+    char* str6 = "F";
+    write(STDOUT_FILENO, str6, strlen(str6));
     
     // asm volatile("fence rw, rw;");
     ght_set_status_01 ();
