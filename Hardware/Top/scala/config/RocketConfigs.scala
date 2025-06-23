@@ -14,6 +14,8 @@ class RocketConfig extends Config(
    new chipyard.config.WithTileFrequency(60, Some(2)) ++
    new chipyard.config.WithTileFrequency(60, Some(3)) ++
    new chipyard.config.WithTileFrequency(60, Some(4)) ++
+   new chipyard.config.WithTileFrequency(60, Some(5)) ++
+   new chipyard.config.WithTileFrequency(60, Some(6)) ++
    new freechips.rocketchip.subsystem.WithGCBusFrequency(60) ++ 
    new chipyard.config.WithSystemBusFrequency(90) ++
    new WithGHE ++
@@ -22,7 +24,7 @@ class RocketConfig extends Config(
     AsynchronousCrossing().sourceSync) ++
    //  Crossing specifications
    new boom.common.WithNMegaBooms(1, overrideIdOffset=Some(0)) ++
-   new freechips.rocketchip.subsystem.WithNGCCheckers(4, overrideIdOffset=Some(1)) ++
+   new freechips.rocketchip.subsystem.WithNGCCheckers(6, overrideIdOffset=Some(1)) ++
    new chipyard.config.AbstractConfig
   )
 
@@ -32,6 +34,8 @@ class FireGuardConfig extends Config(
    new chipyard.config.WithTileFrequency(2000, Some(2)) ++
    new chipyard.config.WithTileFrequency(2000, Some(3)) ++
    new chipyard.config.WithTileFrequency(2000, Some(4)) ++
+   new chipyard.config.WithTileFrequency(2000, Some(5)) ++
+   new chipyard.config.WithTileFrequency(2000, Some(6)) ++
    new freechips.rocketchip.subsystem.WithGCBusFrequency(2000) ++ 
    new chipyard.config.WithSystemBusFrequency(3000) ++
    new WithGHE ++
@@ -40,7 +44,7 @@ class FireGuardConfig extends Config(
     AsynchronousCrossing().sourceSync) ++
    //  Crossing specifications
    new boom.common.WithNMegaBooms(1, overrideIdOffset=Some(0)) ++
-   new freechips.rocketchip.subsystem.WithNGCCheckers(4, overrideIdOffset=Some(1)) ++
+   new freechips.rocketchip.subsystem.WithNGCCheckers(6, overrideIdOffset=Some(1)) ++
    new chipyard.config.AbstractConfig
   )
 

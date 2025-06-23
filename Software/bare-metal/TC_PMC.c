@@ -15,7 +15,7 @@ uint64_t g_counter;
 int main(void)
 {
   //================== Initialisation ==================//
-  ght_set_numberofcheckers(4);
+  ght_set_numberofcheckers(6);
   ROCC_INSTRUCTION_S (1, 0x02, 0x01); // Enabling FI
   ROCC_INSTRUCTION (1, 0x67); // Reset FI
 
@@ -35,9 +35,11 @@ int main(void)
   ght_cfg_se (0x00, 0x02, 0x01, 0x01);
   // se: 01, end_id: 0x03, scheduling: rr, start_id: 0x03
   ght_cfg_se (0x01, 0x03, 0x01, 0x03);
+  // se: 02, end_id: 0x06, scheduling: rr, start_id: 0x04
+  ght_cfg_se (0x02, 0x06, 0x01, 0x04);
 
   
-  ght_cfg_mapper (0b01, 0b11);
+  ght_cfg_mapper (0b01, 0b111);
 
   while (ght_get_initialisation() == 0){
 

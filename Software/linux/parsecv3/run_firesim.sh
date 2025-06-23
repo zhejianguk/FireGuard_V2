@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-BENCHMARKS=(blackscholes bodytrack dedup ferret fluidanimate freqmine streamcluster swaptions x264)
+BENCHMARKS=(bodytrack dedup ferret fluidanimate freqmine streamcluster swaptions x264)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PARSEC_DIR="${SCRIPT_DIR}/parsec-benchmark/pkgs"
 FIREMARSHAL_WORKLOADS_DIR="${SCRIPT_DIR}/firemarshal-workloads"

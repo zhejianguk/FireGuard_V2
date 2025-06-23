@@ -63,8 +63,8 @@ int main(void)
   ghm_cfg_agg(0x01);
   
 
-  // se: 0x03, end_id: 0x03, scheduling: fp, start_id: 0x02
-  ght_cfg_se (0x03, 0x03, 0x03, 0x02);
+  // se: 0x03, end_id: 0x06, scheduling: fp, start_id: 0x02
+  ght_cfg_se (0x03, 0x06, 0x03, 0x02);
 
   // inst_index: 0x03 se: 0x03
   ght_cfg_mapper (0x03, 0b1000);
@@ -121,7 +121,7 @@ int __main(void)
   
   switch (Hart_id){
       case 0x01:
-        task_ShadowStack_M_Agg(Hart_id, 0x2, 0x3);
+        task_ShadowStack_M_Agg(Hart_id, 0x2, 0x6);
       break;
 
       case 0x02:
