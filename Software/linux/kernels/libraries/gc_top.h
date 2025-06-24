@@ -1,7 +1,7 @@
 #ifndef GC_TOP_H
 #define GC_TOP_H
 
-#define NUM_CORES 5
+#define NUM_CORES 7
 #define GC_DEBUG 0
 #define FILTERWIDTH 0x00
 

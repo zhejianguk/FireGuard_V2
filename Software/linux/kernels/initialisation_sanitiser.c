@@ -49,7 +49,7 @@ void main (void)
 	ght_cfg_filter(0x01, 0x03, 0x23, 0x03); // sd
 
 	// se: 00, end_id: NUM_CORES-1, scheduling: rr, start_id: 0x01
-  	ght_cfg_se (0x00, NUM_CORES-1, 0x01, 0x01);
+  	ght_cfg_se (0x00, 0x04, 0x01, 0x01);
 
 	ght_cfg_mapper (0x01, 0b0001);
 	

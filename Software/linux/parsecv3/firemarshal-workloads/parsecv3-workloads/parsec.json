@@ -11,7 +11,7 @@
     "jobs": [
         {
             "name": "all",
-            "command": "cd /root/pkgs && ./run_parsec.sh -k sanitiser -b x264 && poweroff -f"
+            "command": "cd /root/pkgs && ./run_parsec.sh -k sanitiser -b swaptions && poweroff -f"
         }
     ]
 }
