@@ -1,5 +1,5 @@
 {
-    "name": "parsec",
+    "name": "spec06",
     "base": "br-base.json",
     "overlay": "overlay",
     "host-init": "host-init.sh",
@@ -11,7 +11,7 @@
     "jobs": [
         {
             "name": "all",
-            "command": "cd /root/pkgs && ./run_parsec.sh -k sanitiser -b x264 && poweroff -f"
+            "command": "cd /root/riscv-spec-ref && initialisation_perf.riscv && run.sh -w 400.perlbench && poweroff -f"
         }
     ]
 }

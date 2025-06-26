@@ -21,3 +21,4 @@ firesim:
     "Hardware/Top/scala": "main:generators/chipyard/src/main/scala"
     "Hardware/Firesim/scala": "main:generators/firechip/src/main/scala"
     "Software/linux/parsecv3/firemarshal-workloads/parsecv3-workloads": "firemarshal:parsecv3-workloads" 
+    "Software/linux/spec06/firemarshal-workloads/spec06-workloads": "firemarshal:spec06-workloads" 
