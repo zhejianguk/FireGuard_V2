@@ -110,7 +110,7 @@ update_json_config() {
     log_info "Updating JSON configuration for benchmark: $benchmark"
     
     # Create the new command - note the corrected format
-    local new_command="cd /root/riscv-spec-ref && initialisation_${GC_KERNEL}.riscv && run.sh -w $benchmark && poweroff -f"
+    local new_command="cd /root/riscv-spec-ref && ./run.sh -w $benchmark && poweroff -f"
     
     # Create a temporary file and rewrite the JSON properly
     local temp_file=$(mktemp)
